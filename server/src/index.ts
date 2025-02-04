@@ -29,7 +29,7 @@ dotenv.config({
 
 // Initialize Express app
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 443;
 
 // Configure CORS with ALL allowed origins
 app.use(cors());
@@ -37,17 +37,16 @@ app.use(cors());
 // Parse JSON request bodies
 app.use(express.json());
 app.use(cookieParser());
-
-// Mount hello world test route
-app.use("/hello", helloRouter);
+app.use(express.urlencoded({ extended: true })); // not sure this is needed
 
 // Initialize Telegram bot service
 const telegramService = TelegramService.getInstance();
 
-// Mount Telegram webhook endpoint
+// Move this BEFORE other routes
 app.use("/telegram/webhook", telegramService.getWebhookCallback());
 
-// Mount Twitter OAuth routes
+// Then other routes
+app.use("/hello", helloRouter);
 app.use("/auth/twitter", twitterRouter);
 
 // Mount Discord OAuth routes
@@ -87,7 +86,7 @@ app.listen(port, async () => {
 
     // Start ngrok tunnel for development
     const ngrokService = NgrokService.getInstance();
-    await ngrokService.start();
+    await ngrokService.start();  // Pass the port explicitly
     services.push(ngrokService);
 
     const ngrokUrl = ngrokService.getUrl()!;
@@ -100,6 +99,13 @@ app.listen(port, async () => {
 
     const botInfo = await telegramService.getBotInfo();
     console.log("Telegram Bot URL:", `https://t.me/${botInfo.username}`);
+
+    // Log all registered routes
+    app._router.stack.forEach((r: any) => {
+      if (r.route && r.route.path) {
+        console.log(`Route: ${r.route.path}`);
+      }
+    });
   } catch (e) {
     console.error("Failed to start server:", e);
     process.exit(1);
