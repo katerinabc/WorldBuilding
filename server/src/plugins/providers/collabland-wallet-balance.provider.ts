@@ -60,7 +60,14 @@ export class CollabLandWalletBalanceProvider implements Provider {
       "[CollabLandWalletBalanceProvider] account found in memories",
       account
     );
-    const provider = ethers.getDefaultProvider(account.chainId);
+
+    // Add null check and network name
+    if (!account.chainId) {
+      return "";
+    }
+    //convert chain id to network name that ethers accepts
+    const networkName = account.chainId === 84531 ? "base-sepolia" : "mainnet";
+    const provider = ethers.getDefaultProvider(networkName);
     const balance = await provider.getBalance(account.smartAccount as string);
     const formattedBalance = ethers.formatEther(balance);
     console.log("[CollabLandWalletBalanceProvider] balance", formattedBalance);

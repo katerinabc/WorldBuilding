@@ -59,8 +59,16 @@ export class TelegramService extends BaseService {
 
   public async setWebhook(webhookUrl: string): Promise<void> {
     this.webhookUrl = `${webhookUrl}/telegram/webhook`;
+    console.log("Setting webhook URL:", {
+        incoming: webhookUrl,
+        final: this.webhookUrl,
+        parts: new URL(this.webhookUrl).pathname.split('/')
+    });
     await this.bot.api.setWebhook(this.webhookUrl);
-    console.log("Telegram webhook set:", this.webhookUrl);
+
+    // Add this verification
+    const info = await this.bot.api.getWebhookInfo();
+    console.log("Webhook status after setting:", info);
   }
 
   public getWebhookCallback() {
@@ -81,12 +89,33 @@ export class TelegramService extends BaseService {
       timeout: 5 * 60 * 1000,
     });
     try {
+      console.log("starting telegram bot initalization...");
+
+      // get bot info to verify token workds
+      const botInfo = await this.bot.api.getMe();
+      console.log("botInfo:", botInfo);
+
+      console.log("setting bot commands");
+    } catch (error) {
+      console.error("Failed to get bot info:", error);
+      throw error;
+    }
+    const webhookInfo = await this.bot.api.getWebhookInfo();
+    console.log("webhookInfo:", webhookInfo);
+
+    try {
       //all command descriptions can be added here
       this.bot.api.setMyCommands([
         {
           command: "start",
           description: "Add any hello world functionality to your bot",
         },
+        { command: "feedme", description: "Give me data to eat"},
+        { command: "write", description: "Let's write a story together"},
+        { command: "feed", description: "Give me data to eat"},
+        { command: "write", description: "Let's write a story together"},
+        { command: "copyright", description: "Register on Story Protocol and get copyright"},
+        { command: "publish", description: "Publish the story on twitter"},
         { command: "mint", description: "Mint a token on Wow.xyz" },
         { command: "eliza", description: "Talk to the AI agent" },
         { command: "lit", description: "Execute a Lit action" },
@@ -366,6 +395,10 @@ You can view the token page below (it takes a few minutes to be visible)`,
             );
           }
         }
+      });
+
+      this.bot.on("message", (ctx) => {
+        console.log("Received message:", ctx.message);
       });
     } catch (error) {
       console.error("Failed to start Telegram bot:", error);
