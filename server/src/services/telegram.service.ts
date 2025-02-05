@@ -148,7 +148,7 @@ export class TelegramService extends BaseService {
           console.log("[COPYRIGHT] command received from:", ctx.from?.username);
 
           await ctx.reply(
-            "Lets give you what is rightly you. I'll add you for some info and then register your story on Story Protocol.\n" +
+            "Lets give you what is rightly you. I'll ask you for some info and then register your story on Story Protocol.\n" +
               "If others use it you get paid."
           );
           await ctx.reply(
