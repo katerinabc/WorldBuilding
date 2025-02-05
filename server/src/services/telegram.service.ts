@@ -15,6 +15,7 @@ import path, { resolve } from "path";
 import { keccak256, getBytes, toUtf8Bytes } from "ethers";
 import { TwitterService } from "./twitter.service.js";
 import { NgrokService } from "./ngrok.service.js";
+import { TweetAnalyzerService } from "./tweet-analyzer.service.js";
 
 // hack to avoid 400 errors sending params back to telegram. not even close to perfect
 const htmlEscape = (_key: AnyType, val: AnyType) => {
@@ -30,6 +31,13 @@ const htmlEscape = (_key: AnyType, val: AnyType) => {
 };
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
+
+// Add the interface
+interface ThemeAnalysis {
+  theme: string;
+  confidence: number;
+}
+
 export class TelegramService extends BaseService {
   private static instance: TelegramService;
   private bot: Bot;
@@ -37,6 +45,7 @@ export class TelegramService extends BaseService {
   private elizaService: ElizaService;
   private nGrokService: NgrokService;
   private twitterService?: TwitterService;
+  private tweetAnalyzerService: TweetAnalyzerService;
 
   private constructor(webhookUrl?: string) {
     super();
@@ -48,6 +57,7 @@ export class TelegramService extends BaseService {
     }
     this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
     this.elizaService = ElizaService.getInstance(this.bot);
+    this.tweetAnalyzerService = TweetAnalyzerService.getInstance();
   }
 
   public static getInstance(webhookUrl?: string): TelegramService {
@@ -87,12 +97,13 @@ export class TelegramService extends BaseService {
           command: "start",
           description: "Add any hello world functionality to your bot",
         },
+        { command: "feed", description: "Feed the bot tweets" },
         { command: "mint", description: "Mint a token on Wow.xyz" },
         { command: "eliza", description: "Talk to the AI agent" },
         { command: "lit", description: "Execute a Lit action" },
       ]);
       // all command handlers can be registered here
-      this.bot.command("start", (ctx) => ctx.reply("Hello!"));
+      this.bot.command("start", (ctx) => ctx.reply("Hello! I'm here"));
       this.bot.catch(async (error) => {
         console.error("Telegram bot error:", error);
       });
@@ -113,6 +124,116 @@ export class TelegramService extends BaseService {
           err
         );
       }
+
+      this.bot.command("feed", async (ctx) => {
+        try {
+          console.log("\n[FEED] Command received from:", ctx.from?.username);
+
+          await ctx.reply(
+            "Also agents need food. And we live of your thoughts. All the nastiest thoughts and most uplifting unicorns that you post online. Paste a twitter url and FEED ME!\n" +
+              "That's how it looks: https://x.com/username"
+          );
+        } catch (error) {
+          console.error("[FEED] Command error:", error);
+          await ctx.reply(
+            "Sorry, there was an error starting the feed process."
+          );
+        }
+      });
+
+      this.bot.on("message:text", async (ctx) => {
+        try {
+          const text = ctx.message.text;
+          console.log("\n[URL] Received message:", text);
+
+          // Only process if it's a Twitter URL and not a command
+          if (text.includes("x.com/") && !text.startsWith("/")) {
+            console.log("[URL] Twitter URL detected");
+
+            // Extract username from URL
+            const username = text.split("/").pop()?.replace("@", "");
+            if (!username) {
+              console.log("[URL] Could not extract username");
+              await ctx.reply("Could not extract username from URL");
+              return;
+            }
+
+            console.log("[URL] Extracted username:", username);
+            await ctx.reply("Hmmmm nice human thoughts 🤤");
+
+            try {
+              // First get the user profile to get the numeric ID
+              console.log(`[URL] Getting user profile for: ${username}`);
+              const userProfile = await this.twitterService
+                ?.getScraper()
+                .getProfile(username);
+
+              if (!userProfile || !userProfile.userId) {
+                console.log("[URL] Could not find user profile");
+                await ctx.reply("Could not find this Twitter profile");
+                return;
+              }
+
+              console.log(`[URL] Found user ID: ${userProfile.userId}`);
+
+              // Now get tweets using the numeric ID
+              console.log(
+                `[URL] Scraping tweets for user ID: ${userProfile.userId}`
+              );
+              const tweetResponse = await this.twitterService
+                ?.getScraper()
+                .getUserTweets(userProfile.userId, 100);
+              const tweets = tweetResponse?.tweets || [];
+
+              console.log(`[URL] Retrieved ${tweets.length} tweets`);
+
+              if (tweets.length === 0) {
+                console.log("[URL] No tweets found");
+                await ctx.reply("No tweets found for this profile");
+                return;
+              }
+
+              await ctx.reply(
+                `Digesting ${tweets.length} posts. Ready in a moment... 🍽️`
+              );
+
+              console.log(`[URL] Starting theme analysis`);
+              const themes =
+                await this.tweetAnalyzerService.analyzeTweets(tweets);
+
+              console.log("[URL] Analysis complete. Themes:", themes);
+              await ctx.reply("Spitting out those 5 themes for you! 🎯");
+
+              const keyboard = themes
+                .slice(0, 5)
+                .map((theme: ThemeAnalysis, index: number) => [
+                  {
+                    text: `${index + 1}. ${theme.theme} (${theme.confidence}%)`,
+                    callback_data: `theme_${index}`,
+                  },
+                ]);
+
+              console.log("[URL] Sending themes to user");
+              await ctx.reply("Pick your favorite theme:", {
+                reply_markup: {
+                  inline_keyboard: keyboard,
+                },
+              });
+            } catch (error) {
+              console.error("[URL] Error:", error);
+              await ctx.reply(
+                "Sorry, I had trouble reading those tweets. Please try again later."
+              );
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("[URL] Error:", error);
+          await ctx.reply(
+            "Sorry, there was an error analyzing this Twitter profile."
+          );
+        }
+      });
 
       this.bot.command("mint", async (ctx) => {
         try {
