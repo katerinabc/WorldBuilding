@@ -132,7 +132,8 @@ export class TelegramService extends BaseService {
 
           await ctx.reply(
             "Also agents need food. And we live of your thoughts. All the nastiest thoughts and most uplifting unicorns that you post online. Paste a twitter url and FEED ME!\n" +
-              "That's how it looks: https://x.com/username"
+              "You need to start the command with feed it. Like this:\n" +
+              "feed it https://x.com/username"
           );
         } catch (error) {
           console.error("[FEED] Command error:", error);
@@ -150,8 +151,11 @@ export class TelegramService extends BaseService {
             "Lets give you what is rightly you. I'll add you for some info and then register your story on Story Protocol.\n" +
               "If others use it you get paid."
           );
+          await ctx.reply(
+            "first thing first, what's the title? write it as Title: your amazingly clever title"
+          );
         } catch (error) {
-          console.eerror("[COPYRIGHT command error:", error);
+          console.error("[COPYRIGHT command error:", error);
           await ctx.reply(
             "oh shit, there's an error getting your IP registered. Try again?"
           );
@@ -164,11 +168,17 @@ export class TelegramService extends BaseService {
           console.log("\n[URL] Received message:", text);
 
           // Only process if it's a Twitter URL and not a command
-          if (text.includes("x.com/") && !text.startsWith("/")) {
+          // More flexible version
+          if (
+            text.toLowerCase().trim().startsWith("feed it") &&
+            text.includes("x.com/") &&
+            !text.startsWith("/")
+          ) {
             console.log("[URL] Twitter URL detected");
 
             // Extract username from URL
-            const username = text.split("/").pop()?.replace("@", "");
+            const gettwitterurl = text.replace("feed it", "");
+            const username = gettwitterurl.split("/").pop()?.replace("@", "");
             if (!username) {
               console.log("[URL] Could not extract username");
               await ctx.reply("Could not extract username from URL");
