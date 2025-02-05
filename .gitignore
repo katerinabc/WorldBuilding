@@ -4,6 +4,7 @@
 .env
 .env.*
 !.env.example
+twitter-cookies.json
 
 # dependencies
 /node_modules
@@ -64,3 +65,5 @@ token.json
 lit-actions/actions/
 twitter-cookies.jsonserver/src/services/gaiasnapshot/
 server/src/services/gaiasnapshot/
+twitter-cookies.json
+twitter-cookies.json
