@@ -62,4 +62,5 @@ token.json
 
 .vscode/
 lit-actions/actions/
-twitter-cookies.json
+twitter-cookies.jsonserver/src/services/gaiasnapshot/
+server/src/services/gaiasnapshot/

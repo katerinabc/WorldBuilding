@@ -1,5 +1,19 @@
-node_modules
-dist
-.next
-build
-coverage 
+# Python virtual environments
+**/gaiasnapshot/**
+**/venv/**
+**/.env/**
+
+# Python cache files
+**/__pycache__/**
+*.pyc
+
+# Node modules
+node_modules/
+
+# Build directories
+dist/
+build/
+
+# Other common directories to ignore
+.next/
+coverage/ 
