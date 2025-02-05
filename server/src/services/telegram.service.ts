@@ -98,6 +98,7 @@ export class TelegramService extends BaseService {
           description: "Add any hello world functionality to your bot",
         },
         { command: "feed", description: "Feed the bot tweets" },
+        { command: "copyright", description: "get your story copy-righted" },
         { command: "mint", description: "Mint a token on Wow.xyz" },
         { command: "eliza", description: "Talk to the AI agent" },
         { command: "lit", description: "Execute a Lit action" },
@@ -137,6 +138,22 @@ export class TelegramService extends BaseService {
           console.error("[FEED] Command error:", error);
           await ctx.reply(
             "Sorry, there was an error starting the feed process."
+          );
+        }
+      });
+
+      this.bot.command("copyright", async (ctx) => {
+        try {
+          console.log("[COPYRIGHT] command received from:", ctx.from?.username);
+
+          await ctx.reply(
+            "Lets give you what is rightly you. I'll add you for some info and then register your story on Story Protocol.\n" +
+              "If others use it you get paid."
+          );
+        } catch (error) {
+          console.eerror("[COPYRIGHT command error:", error);
+          await ctx.reply(
+            "oh shit, there's an error getting your IP registered. Try again?"
           );
         }
       });
