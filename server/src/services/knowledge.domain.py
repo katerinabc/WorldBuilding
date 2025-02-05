@@ -46,11 +46,32 @@ def load_and_process_data():
     # Load the dataset from HuggingFace
     print("Loading dataset from HuggingFace...")
     df = pd.read_csv("hf://datasets/stevez80/Sci-Fi-Books-gutenberg/sci-fi-books.csv")
+
+    lenoriginal = len(df)
+
+    print(f"Original dataset has {lenoriginal} documents")
+
+    # calculate length of text entries
+    df['length'] = df['text'].astype(str).map(len)
+
+    #  calculate  avg and standard deviation to get min and max for filtering documents
+    avg = df['length'].median()
+    stdev = df['length'].std()
+    print(f" the  avg length is { avg} and the stdev is {stdev}. min value = { avg - stdev}, max value = {avg + stdev}. ")
+    
+    # getting subset of documents
+    # print(f"taking all docs that are -1 standard deviation and +1 standard deviation from the average")
+    print(f"taking all docs whose lenght is less than the average.")
+    # why 1/3 stdev? with 1 stdev  all the documents were captured. there must be a very long outlier.
+    # 1/3 still captured all the docs. 
+    # better solution: as this is about token limit, go through the docs in chunks. create chunks based on book sizes 
+    df_small = df[df['length'] <  avg]
+    print(f"subset as {len(df_small)} documents out of {lenoriginal}. ")
     
     # Convert DataFrame rows to Documents
     print("Converting DataFrame to Documents...")
     documents = []
-    for idx, row in df.iterrows():
+    for idx, row in df_small.iterrows():
         doc = Document(
             text=str(row['text']),
             metadata={
