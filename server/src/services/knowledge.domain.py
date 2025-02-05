@@ -22,7 +22,8 @@ from typing import List
 load_dotenv()
 
 # Verify OpenAI API key is set
-if not os.getenv("OPENAI_API_KEY"):
+# can I use a different model for this? I'm over the limit
+if not os.getenv("OPENAI_API_KEY"): 
     raise ValueError("OPENAI_API_KEY not found in environment variables")
 
 def save_nodes_to_file(nodes: List, output_file: str = "sci_fi_chunks.txt"):
