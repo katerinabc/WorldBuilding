@@ -12,7 +12,7 @@ import twitterRouter from "./routes/twitter.js";
 import discordRouter from "./routes/discord.js";
 import cookieParser from "cookie-parser";
 import githubRouter from "./routes/github.js";
-import { AnyType } from "./utils.js";
+// import { AnyType } from "./utils.js";
 import { isHttpError } from "http-errors";
 
 // Convert ESM module URL to filesystem path
@@ -56,20 +56,20 @@ app.use("/auth/discord", discordRouter);
 app.use("/auth/github", githubRouter);
 
 // 404 handler
-app.use((_req: Request, _res: Response, _next: NextFunction) => {
-  _res.status(404).json({
+app.use((_req: Request, res: Response, _next: NextFunction) => {
+  res.status(404).json({
     message: `Route ${_req.method} ${_req.url} not found`,
   });
 });
 
-app.use((_err: AnyType, _req: Request, _res: Response, _next: NextFunction) => {
-  if (isHttpError(_err)) {
-    _res.status(_err.statusCode).json({
-      message: _err.message,
+app.use((err: Error, _req: Request, _res: Response, _next: NextFunction) => {
+  if (isHttpError(err)) {
+    _res.status(err.statusCode).json({
+      message: err.message,
     });
-  } else if (_err instanceof Error) {
+  } else if (err instanceof Error) {
     _res.status(500).json({
-      message: `Internal Server Error: ${_err.message}`,
+      message: `Internal Server Error: ${err.message}`,
     });
   } else {
     _res.status(500).json({
@@ -86,7 +86,7 @@ app.listen(port, async () => {
 
     // Start ngrok tunnel for development
     const ngrokService = NgrokService.getInstance();
-    await ngrokService.start();  // Pass the port explicitly
+    await ngrokService.start(); // Pass the port explicitly
     services.push(ngrokService);
 
     const ngrokUrl = ngrokService.getUrl()!;
@@ -101,13 +101,14 @@ app.listen(port, async () => {
     console.log("Telegram Bot URL:", `https://t.me/${botInfo.username}`);
 
     // Log all registered routes
-    app._router.stack.forEach((r: any) => {
-      if (r.route && r.route.path) {
-        console.log(`Route: ${r.route.path}`);
-      }
-    });
-  } catch (e) {
-    console.error("Failed to start server:", e);
+    // throws an error because of the any when pushing to github. ignore for now
+    // app._router.stack.forEach((r: any) => {
+    //   if (r.route && r.route.path) {
+    //     console.log(`Route: ${r.route.path}`);
+    //   }
+    // });
+  } catch (error: Error | unknown) {
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 });
