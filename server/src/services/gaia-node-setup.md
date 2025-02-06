@@ -46,33 +46,30 @@ I need to create my own config file for setting up the node.
 
 2. Create knowledge domain
 
-- training data: sci-fi literature corpus: filtered to make it manageable for the hackaton. Focused on 10% of the smallest books. If time, increase to 50%
+- training data: sci-fi literature corpus: filtered to make it manageable for the hackaton. Focused on 10% of the smallest books. If time, increase to 50%.
 
-1. Model Selection & Training
+install wasmedge runtime
 
-   - Base Model: Llama2 7B (quantized)
-   - Training Data: Sci-fi literature corpus
-   - Fine-tuning parameters
+```
+curl -sSf https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/utils/install_v2.sh | bash -s
+```
 
-2. Node Configuration
+download embedding model to create rag
 
-   - Hardware requirements
-   - Environment setup
-   - Model deployment
+```
+curl -sSf https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/main/bge.small.en.v1.5.bin -o bge.small.en.v1.5.bin
+```
 
-3. Gaia Integration
+follow the instructions for creating a knowledge domain on the gaianet docs
+url for science fiction corpus: "hf://datasets/katerinabc/gutenberg-scifi/gutenbergscifi.tar.gz"
 
-   - Node registration
-   - API endpoint setup
-   - Authentication
+new config file for my gaianet node
 
-4. Knowledge Base
+remember to stop the gaianode if it's running
 
-   - Sci-fi corpus integration
-   - Vector embeddings
-   - Retrieval system
-
-5. Testing & Validation
-   - Response quality
-   - Performance metrics
-   - Integration tests
+gaianet init config \
+ --snapshot hf://datasets/katerinabc/gutenberg-scifi/gutenbergscifi.tar.gz \
+ --embedding-url https://huggingface.co/gaianet/Nomic-embed-text-v1.5-Embedding-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf \
+ --embedding-ctx-size 8192 \
+ --system-prompt "You are a science fiction writer. You know the classics but also the obscure sci-fi short stories. Your stories may contain aliens, robots or made up technology and planets. You follow the typical style of a hero facing an external, internal and philosophical callenge. The hero is being guided by a mentor." \
+ --rag-prompt "The following text is the context for the user question.\n----------------\n"
