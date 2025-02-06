@@ -10,6 +10,7 @@
   "prompt_template": "chatml",
   "reverse_prompt": "",
   "context_window": "1",
+  "snapshot": "hf://datasets/katerinabc/gutenberg-scifi/gutenbergscifi.tar.gz",
   "embedding": "https://huggingface.co/gaianet/Nomic-embed-text-v1.5-Embedding-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf",
   "embedding_name": "Nomic-embed-text-v1.5",
   "embedding_ctx_size": "8192",

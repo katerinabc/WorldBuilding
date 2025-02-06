@@ -67,7 +67,7 @@ new config file for my gaianet node
 
 remember to stop the gaianode if it's running
 
-gaianet init config \
+gaianet init --config \
  --snapshot hf://datasets/katerinabc/gutenberg-scifi/gutenbergscifi.tar.gz \
  --embedding-url https://huggingface.co/gaianet/Nomic-embed-text-v1.5-Embedding-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf \
  --embedding-ctx-size 8192 \
