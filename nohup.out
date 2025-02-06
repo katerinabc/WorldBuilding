@@ -1,0 +1,38 @@
+Unable to find image 'qdrant/qdrant:latest' locally
+latest: Pulling from qdrant/qdrant
+7ce705000c39: Pulling fs layer
+f4d09453826d: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+c6302caa751a: Pulling fs layer
+634b4b0d69ea: Pulling fs layer
+9504d45f291a: Pulling fs layer
+92f6ed453385: Pulling fs layer
+86ee1f2e7624: Pulling fs layer
+c6302caa751a: Waiting
+634b4b0d69ea: Waiting
+9504d45f291a: Waiting
+92f6ed453385: Waiting
+86ee1f2e7624: Waiting
+4f4fb700ef54: Download complete
+f4d09453826d: Verifying Checksum
+f4d09453826d: Download complete
+c6302caa751a: Verifying Checksum
+c6302caa751a: Download complete
+7ce705000c39: Verifying Checksum
+7ce705000c39: Download complete
+9504d45f291a: Download complete
+92f6ed453385: Download complete
+7ce705000c39: Pull complete
+f4d09453826d: Pull complete
+4f4fb700ef54: Pull complete
+c6302caa751a: Pull complete
+634b4b0d69ea: Download complete
+86ee1f2e7624: Verifying Checksum
+86ee1f2e7624: Download complete
+634b4b0d69ea: Pull complete
+9504d45f291a: Pull complete
+92f6ed453385: Pull complete
+86ee1f2e7624: Pull complete
+Digest: sha256:81bdf0a9deedbeec68eed207145ade0b9d5db15e2f84069180711aa9698445b1
+Status: Downloaded newer image for qdrant/qdrant:latest
+b0027c28ba12dc2a2a2b28cab81d9f829a52827d69c2672233962bd0fad9c7e1
