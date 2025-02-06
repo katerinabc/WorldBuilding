@@ -7,6 +7,11 @@
 **/__pycache__/**
 *.pyc
 
+# Ignore Python files
+*.py
+**/*.py
+src/services/*.py 
+
 # Node modules
 node_modules/
 

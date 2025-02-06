@@ -1,3 +1,7 @@
 node_modules
 dist
-coverage 
+coverage
+# Ignore Python files
+*.py
+**/*.py
+src/services/*.py 

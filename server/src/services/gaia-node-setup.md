@@ -16,6 +16,12 @@ Steps to create a custom Gaia node with sci-fi knowledge:
    curl -sSfL 'https://github.com/GaiaNet-AI/gaianet-node/releases/latest/download/install.sh' | bash
 ```
 
+✨ Your node ID is 0x89587565873f81206089093b73d7634313fc3497. 🌟 Please register it in your portal account to receive rewards!
+
+>>> Next, you should initialize the GaiaNet node with the LLM and knowledge base. To initialize the GaiaNet node, you need to
+>>> * Run the command 'source /Users/katerinadoyle/.zshrc' to make the gaianet CLI tool available in the current shell;
+>>> * Run the command 'gaianet init' to initialize the GaiaNet node.
+
 Note: Don't use `gaianet init` as it will download kw base about paris + llama3. These are the default models.
 Go to gaianet node github repo and check node-config. Pick one from there.
 This will give you another gaianet init command with the picked model.
@@ -31,31 +37,40 @@ I need to create my own config file for setting up the node.
 
 ## Implementation Steps
 
-1. Model Selection & Training
 
-   - Base Model: Llama2 7B (quantized)
-   - Training Data: Sci-fi literature corpus
-   - Fine-tuning parameters
+1. Create gaia node
 
-2. Node Configuration
+- base model: qwen1.5b
+- default setting
 
-   - Hardware requirements
-   - Environment setup
-   - Model deployment
+2. Create knowledge domain
 
-3. Gaia Integration
+- training data: sci-fi literature corpus: filtered to make it manageable for the hackaton. Focused on 10% of the smallest books. If time, increase to 50%.
 
-   - Node registration
-   - API endpoint setup
-   - Authentication
+install wasmedge runtime
 
-4. Knowledge Base
+```
+curl -sSf https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/utils/install_v2.sh | bash -s
+```
 
-   - Sci-fi corpus integration
-   - Vector embeddings
-   - Retrieval system
+download embedding model to create rag
 
-5. Testing & Validation
-   - Response quality
-   - Performance metrics
-   - Integration tests
+```
+curl -sSf https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/main/bge.small.en.v1.5.bin -o bge.small.en.v1.5.bin
+```
+
+follow the instructions for creating a knowledge domain on the gaianet docs
+url for science fiction corpus: "hf://datasets/katerinabc/gutenberg-scifi/gutenbergscifi.tar.gz"
+
+new config file for my gaianet node
+
+remember to stop the gaianode if it's running
+
+gaianet --config \
+ --snapshot https://huggingface.co/datasets/katerinabc/gutenberg-scifi/resolve/main/gutenbergscifi.tar.gz \
+ --embedding-url https://huggingface.co/gaianet/Nomic-embed-text-v1.5-Embedding-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf \
+ --embedding-ctx-size 8192 \
+ --system-prompt "You are a science fiction writer. You know the classics but also the obscure sci-fi short stories. Your stories may contain aliens, robots or made up technology and planets. You follow the typical style of a hero facing an external, internal and philosophical callenge. The hero is being guided by a mentor." \
+ --rag-prompt "The following text is the context for the user question.\n----------------\n"
+
+gaianet init --config https://github.com/katerinabc/WorldBuilding/blob/gaiamodel/server/src/services/gaianode.config.json
