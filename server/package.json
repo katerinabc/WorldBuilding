@@ -21,6 +21,7 @@
     "@grammyjs/conversations": "^1.2.0",
     "@ngrok/ngrok": "^1.4.1",
     "@solana/web3.js": "^1.98.0",
+    "@story-protocol/core-sdk": "1.3.0-beta.2",
     "@useorbis/db-sdk": "0.0.60-alpha",
     "agent-twitter-client": "^0.0.18",
     "axios": "^1.7.7",
