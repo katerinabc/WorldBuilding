@@ -40,6 +40,14 @@ load_dotenv(dotenv_path=env_path)
 # if not os.getenv("OPENAI_API_KEY"):
 #     raise ValueError("OPENAI_API_KEY not found in environment variables")
 
+# Load environment variables
+load_dotenv()
+
+# Verify OpenAI API key is set
+# can I use a different model for this? I'm over the limit
+if not os.getenv("OPENAI_API_KEY"): 
+    raise ValueError("OPENAI_API_KEY not found in environment variables")
+
 def save_nodes_to_file(nodes: List, output_file: str = "sci_fi_chunks.txt"):
     """
     Save nodes to a text file with empty lines between chunks
@@ -83,6 +91,7 @@ def load_and_process_data():
     # Load the dataset from HuggingFace
     print("Loading dataset from HuggingFace...")
     df = pd.read_csv("hf://datasets/stevez80/Sci-Fi-Books-gutenberg/sci-fi-books.csv")
+
     lenoriginal = len(df)
     print(f"Original dataset has {lenoriginal} documents")
 
@@ -109,8 +118,11 @@ def load_and_process_data():
     print("Converting DataFrame to Documents...")
     # Sort by length (shortest first). begin embedding with the shortest
     df_small = df[df['length'] < avg].sort_values('length')
+    
+    # Convert DataFrame rows to Documents
+    print("Converting DataFrame to Documents...")
     documents = []
-    for idx, row in df_small.iterrows():
+    for idx, row in df.iterrows():
         doc = Document(
             text=str(row['text']),
             metadata={
@@ -123,6 +135,7 @@ def load_and_process_data():
     
     # Initialize the semantic splitter
     print(f"Initializing semantic splitter...")
+
     embed_model = OpenAIEmbedding(
         api_base=os.getenv("GAIANET_SERVER_URL"),
         api_key=os.getenv("GAIA_API_KEY"),
@@ -155,7 +168,7 @@ def load_and_process_data():
     
     # Save nodes in Gaia-compatible format
     save_nodes_to_file(nodes)
-    
+
     return "processing complete"
 
 # Validate Gaia endpoint
@@ -195,3 +208,4 @@ if __name__ == "__main__":
     # validate_gaia_endpoint()
     nodes = load_and_process_data()
     print(f"Successfully processed {len(nodes)} nodes")
+    return nodes
