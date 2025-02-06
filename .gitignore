@@ -67,3 +67,6 @@ twitter-cookies.jsonserver/src/services/gaiasnapshot/
 server/src/services/gaiasnapshot/
 twitter-cookies.json
 twitter-cookies.json
+
+# Large model files
+*.gguf
