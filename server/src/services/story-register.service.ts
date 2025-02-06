@@ -53,6 +53,25 @@ async function register() {
   const nftHash = createHash("sha256")
     .update(JSON.stringify(nftMetadata))
     .digest("hex");
+
+  const response = await client.ipAsset.mintAndRegisterIp({
+    spgNftContract: process.env.SPG_NFT_CONTRACT_ADDRESS as Address,
+    allowDuplicates: true,
+    ipMetadata: {
+      ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
+      ipMetadataHash: `0x${ipHash}`,
+      nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
+      nftMetadataHash: `0x${nftHash}`,
+    },
+    txOptions: { waitForTransaction: true },
+  });
+
+  console.log(
+    `Root IPA created at transaction hash ${response.txHash}, IPA ID: ${response.ipId}`
+  );
+  console.log(
+    `View on the explorer: https://explorer.story.foundation/ipa/${response.ipId}`
+  );
 }
 
 register();
