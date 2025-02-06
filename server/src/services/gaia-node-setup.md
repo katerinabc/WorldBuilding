@@ -39,6 +39,15 @@ I need to create my own config file for setting up the node.
 
 ## Implementation Steps
 
+1. Create gaia node
+
+- base model: qwen1.5b
+- default setting
+
+2. Create knowledge domain
+
+- training data: sci-fi literature corpus: filtered to make it manageable for the hackaton. Focused on 10% of the smallest books. If time, increase to 50%
+
 1. Model Selection & Training
 
    - Base Model: Llama2 7B (quantized)

@@ -55,12 +55,26 @@ def save_nodes_to_file(nodes: List, output_file: str = "sci_fi_chunks.txt"):
     print(f"Saved chunks to {output_file}")
 
 # clean text by removing everything after the Gutenberg footer
-    def clean_gutenberg_text(text):
-        end_pattern = "*** END OF THE PROJECT GUTENBERG EBOOK"
-        if isinstance(text, str):
-            split_text = text.split(end_pattern)
-            return split_text[0] if len(split_text) > 0 else text
-        return text
+def clean_gutenberg_text(text):
+    end_pattern = "*** END OF THE PROJECT GUTENBERG EBOOK"
+    start_pattern = "*** START OF THE PROJECT GUTENBERG EBOOK"
+    license_start_pattern = "Special rules, set forth"
+    license_end_pattern = "*** END: FULL LICENSE ***"
+
+    if isinstance(text, str):
+        split_text = text.split(end_pattern)
+        return split_text[0] if len(split_text) > 0 else text
+    
+    if isinstance(text, str):
+        split_text = text.split(start_pattern)
+        return split_text[0] if len(split_text) > 0 else text
+    
+    if isinstance(text, str):
+        if license_start_pattern in text and license_end_pattern in text:
+            start_idx = text.find(license_start_pattern)
+            end_idx = text.find(license_end_pattern) + len(license_end_pattern)
+            text = text[:start_idx] + text[end_idx:]
+    return text
 
 def load_and_process_data():
     """
@@ -175,8 +189,6 @@ def validate_gaia_endpoint():
 if not validate_gaia_endpoint():
     print("Exiting due to inaccessible Gaia endpoint")
     sys.exit(1)
-
-# Continue with embedding setup...
 
 if __name__ == "__main__":
     print(f"gaia server url: {os.getenv('GAIANET_SERVER_URL')}")
