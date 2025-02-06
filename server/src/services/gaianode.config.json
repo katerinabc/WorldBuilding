@@ -9,7 +9,6 @@
   "chat_batch_size": "128",
   "prompt_template": "chatml",
   "reverse_prompt": "",
-  "system_prompt": "You are a helpful assistant.",
   "context_window": "1",
   "embedding": "https://huggingface.co/gaianet/Nomic-embed-text-v1.5-Embedding-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf",
   "embedding_name": "Nomic-embed-text-v1.5",
