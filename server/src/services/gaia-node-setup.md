@@ -73,3 +73,5 @@ gaianet init config \
  --embedding-ctx-size 8192 \
  --system-prompt "You are a science fiction writer. You know the classics but also the obscure sci-fi short stories. Your stories may contain aliens, robots or made up technology and planets. You follow the typical style of a hero facing an external, internal and philosophical callenge. The hero is being guided by a mentor." \
  --rag-prompt "The following text is the context for the user question.\n----------------\n"
+
+gaianet init --config https://github.com/katerinabc/WorldBuilding/blob/gaiamodel/server/src/services/gaianode.config.json
