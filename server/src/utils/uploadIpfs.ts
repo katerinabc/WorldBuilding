@@ -11,6 +11,6 @@ const pinata = new PinataSDK({
 export async function uploadJSONToIPFS(
   jsonMetadata: Record<string, unknown>
 ): Promise<string> {
-  const { IpfsHash } = await pinata.pinJSONToIPFS(jsonMetadata);
+  const { IpfsHash } = await pinata.upload.json(jsonMetadata);
   return IpfsHash;
 }

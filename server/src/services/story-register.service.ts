@@ -45,10 +45,14 @@ async function register() {
     image: "https://picsum.photos/200",
   };
 
-  const ipfsHash = await uploadJSONToIPFS(ipMetadata);
-  const ipHash = createHash("sha256").update(ipfsHash).digest("hex");
+  const ipIpfsHash = await uploadJSONToIPFS(ipMetadata);
+  const ipHash = createHash("sha256")
+    .update(JSON.stringify(ipMetadata))
+    .digest("hex");
   const nftIpfsHash = await uploadJSONToIPFS(nftMetadata);
-  const nftHash = createHash("sha256").update(nftIpfsHash).digest("hex");
+  const nftHash = createHash("sha256")
+    .update(JSON.stringify(nftMetadata))
+    .digest("hex");
 }
 
 register();

@@ -12,17 +12,13 @@ console.log("Environment variables:", {
 });
 
 const privateKey: Address = `0x${process.env.WALLET_PRIVATE_KEY}`;
-console.log(privateKey);
 export const account: Account = privateKeyToAccount(privateKey);
 
-// initiate story config
 const config: StoryConfig = {
   account: account,
   transport: http(process.env.RPC_PROVIDER_URL),
-  chainId: "odyssey",
+  chainId: "aeneid",
 };
-
-//clinet to mint nft, rgister ip etc
 export const client = StoryClient.newClient(config);
 
 // export const nftCollectionAddress = process.env.NFT_CONTRACT_ADDRESS
