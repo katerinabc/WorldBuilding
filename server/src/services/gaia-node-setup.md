@@ -16,6 +16,14 @@ Steps to create a custom Gaia node with sci-fi knowledge:
    curl -sSfL 'https://github.com/GaiaNet-AI/gaianet-node/releases/latest/download/install.sh' | bash
 ```
 
+```
+✨ Your node ID is 0x89587565873f81206089093b73d7634313fc3497. 🌟 Please register it in your portal account to receive rewards!
+
+>>> Next, you should initialize the GaiaNet node with the LLM and knowledge base. To initialize the GaiaNet node, you need to
+>>> * Run the command 'source /Users/katerinadoyle/.zshrc' to make the gaianet CLI tool available in the current shell;
+>>> * Run the command 'gaianet init' to initialize the GaiaNet node.
+```
+
 Note: Don't use `gaianet init` as it will download kw base about paris + llama3. These are the default models.
 Go to gaianet node github repo and check node-config. Pick one from there.
 This will give you another gaianet init command with the picked model.
