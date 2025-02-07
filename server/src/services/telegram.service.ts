@@ -1,6 +1,7 @@
 import { Bot, webhookCallback } from "grammy";
 import { Context, session, SessionFlavor } from "grammy";
 import { BaseService } from "./base.service.js";
+import { register } from "./story-register.service.js";
 // import { ElizaService } from "./eliza.service.js";
 import {
   // AnyType,
@@ -176,65 +177,79 @@ export class TelegramService extends BaseService {
             return;
           }
 
-          //     // Store the story in session
-          //     ctx.session.story = ctx.message.reply_to_message.text;
-          //     ctx.session.waitingFor = "title";
+          // Store the story in session
+          ctx.session.story = ctx.message.reply_to_message.text;
+          ctx.session.waitingFor = "title";
 
-          //     await ctx.reply(
-          //       "Let's register your story on Story Protocol.\n" +
-          //       "What's the title? Please reply with:\n" +
-          //       "Title: your title here"
-          //     );
-          //   } catch (error) {
-          //     console.error("[COPYRIGHT] command error:", error);
-          //     await ctx.reply("Sorry, there was an error. Please try again.");
-          //   }
-          // });
+          await ctx.reply(
+            "Let's register your story on Story Protocol.\n" +
+              "What's the title? Please reply with:\n" +
+              "Title: your title here"
+          );
+        } catch (error) {
+          console.error("[COPYRIGHT] command error:", error);
+          await ctx.reply("Sorry, there was an error. Please try again.");
+        }
+      });
 
-          // // Title handler
-          // this.bot.hears(/^Title: (.+)$/i, async (ctx: MyContext) => {
-          //   if (ctx.session.waitingFor !== "title") return;
+      // Title handler
+      this.bot.hears(/^Title: (.+)$/i, async (ctx: MyContext) => {
+        if (ctx.session.waitingFor !== "title") return;
 
-          //   ctx.session.title = ctx.match[1].trim();
-          //   ctx.session.waitingFor = "owner";
-          //   await ctx.reply("Great! Now, what's the owner's wallet address? Reply with:\nOwner: wallet_address");
-          // });
+        if (ctx.match && ctx.match[1]) {
+          //check if ctx.match is defined
+          ctx.session.title = ctx.match[1].trim();
+          ctx.session.waitingFor = "owner";
+          await ctx.reply(
+            "Great! Now, what's the owner's wallet address? Reply with:\nOwner: wallet_address"
+          );
+        } else {
+          await ctx.reply(" I'm a machine. Give me a title");
+        }
+      });
 
-          // // Owner handler
-          // this.bot.hears(/^Owner: (.+)$/i, async (ctx: MyContext) => {
-          //   if (ctx.session.waitingFor !== "owner") return;
+      // Owner handler
+      this.bot.hears(/^Owner: (.+)$/i, async (ctx: MyContext) => {
+        if (ctx.session.waitingFor !== "owner") return;
 
-          //   ctx.session.owner = ctx.match[1].trim();
+        if (ctx.match && ctx.match[1]) {
+          //check if ctx.match is defined
+          ctx.session.owner = ctx.match[1].trim();
+        } else {
+          await ctx.reply(" I'm a machine. Give me an owner");
+        }
 
-          //   try {
-          //     if (!ctx.session.title || !ctx.session.story || !ctx.session.owner) {
-          //       await ctx.reply("Missing required information. Please start over with /copyright");
-          //       return;
-          //     }
+        try {
+          if (!ctx.session.title || !ctx.session.story || !ctx.session.owner) {
+            await ctx.reply(
+              "Missing required information. Please start over with /copyright"
+            );
+            return;
+          }
 
-          //     await ctx.reply(
-          //       `Registering your story with these details:\n` +
-          //       `Title: ${ctx.session.title}\n` +
-          //       `Story: ${ctx.session.story.substring(0, 100)}...\n` +
-          //       `Owner: ${ctx.session.owner}`
-          //     );
+          await ctx.reply(
+            `Registering your story with these details:\n` +
+              `Title: ${ctx.session.title}\n` +
+              `Story: ${ctx.session.story.substring(0, 100)}...\n` +
+              `Owner: ${ctx.session.owner}`
+          );
 
-          //     const registrationResponse = await register({
-          //       title: ctx.session.title,
-          //       description: ctx.session.story,
-          //       owner: ctx.session.owner
-          //     });
+          const registrationResponse = await register({
+            title: ctx.session.title,
+            description: ctx.session.story,
+            owner: ctx.session.owner,
+          });
 
-          //     await ctx.reply(
-          //       `Story registered successfully!\n` +
-          //       `View on explorer: ${registrationResponse.explorerUrl}`
-          //     );
+          await ctx.reply(
+            `Story registered successfully!\n` +
+              `View on explorer: ${registrationResponse.explorerUrl}`
+          );
 
-          //     // Reset the session
-          //     ctx.session.waitingFor = undefined;
-          //     ctx.session.title = undefined;
-          //     ctx.session.owner = undefined;
-          //     ctx.session.story = undefined;
+          // Reset the session
+          ctx.session.waitingFor = undefined;
+          ctx.session.title = undefined;
+          ctx.session.owner = undefined;
+          ctx.session.story = undefined;
         } catch (error) {
           console.error("[COPYRIGHT] Registration error:", error);
           await ctx.reply(
