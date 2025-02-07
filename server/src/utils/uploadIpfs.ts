@@ -1,8 +1,8 @@
-import { PinataSDK } from "@pinata-web3";
+import { PinataSDK } from "pinata-web3";
 
 // initate pinata sdk.in the docs this is inside the async function
 const pinata = new PinataSDK({
-  pinataJWTKey: process.env.PINATA_JWT,
+  pinataJwt: process.env.PINATA_JWT,
 });
 
 // function to upload IP and NFT metadata object to ipfs
