@@ -51,6 +51,7 @@ interface SessionData {
   owner?: string;
   story?: string;
   themes?: ThemeAnalysis[];
+  analyzedUrl?: string;
 }
 
 // Add session to context type
@@ -280,6 +281,33 @@ export class TelegramService extends BaseService {
 
             // Extract username from URL
             const gettwitterurl = text.replace("feed it", "");
+
+            // check if we have both URL and themes in sessino
+            if (
+              ctx.session.analyzedUrl === gettwitterurl &&
+              ctx.session.themes
+            ) {
+              console.log("[URL] Already analyzed this URL");
+              await ctx.reply("I already analyzed this URL");
+
+              // Display cached themes
+              const keyboard = ctx.session.themes.map((theme, index) => [
+                {
+                  text: theme.theme
+                    .split(":")[0]
+                    .replace(/^\d+\.\s*/, "")
+                    .trim(),
+                  callback_data: `theme_${index}`,
+                },
+              ]);
+              await ctx.reply("Here are the themes I found:", {
+                reply_markup: {
+                  inline_keyboard: keyboard,
+                },
+              });
+              return;
+            }
+
             const username = gettwitterurl.split("/").pop()?.replace("@", "");
             if (!username) {
               console.log("[URL] Could not extract username");
@@ -330,23 +358,25 @@ export class TelegramService extends BaseService {
               const themes =
                 await this.tweetAnalyzerService.analyzeTweets(tweets);
 
-              console.log("[URL] Analysis complete. Themes:", themes);
-              await ctx.reply("Spitting out those 5 themes for you! 🎯");
+              console.log("[TELEGRAM] Analysis complete. Themes:", themes);
+              await ctx.reply("Spitting out those themes for you! 🎯");
 
-              // Store themes in session
-              ctx.session.themes = themes;
-
-              const keyboard = themes
-                .slice(0, 5)
-                .map((theme: ThemeAnalysis, index: number) => [
-                  {
-                    // text: `${index + 1}. ${theme.theme} (${theme.confidence}%)`,
-                    text: `${theme.theme}`,
-                    callback_data: `theme_${index}`,
-                  },
-                ]);
+              // Create keyboard buttons
+              const keyboard = themes.map((theme, index) => [
+                {
+                  text: theme.theme, // Simplified - just show the theme
+                  callback_data: `theme_${index}`,
+                },
+              ]);
+              console.log("[Telegram] Generated keyboard:", keyboard); // Add logging
 
               console.log("[URL] Sending themes to user");
+
+              // Store both URL and themes in session
+              ctx.session.analyzedUrl = gettwitterurl;
+              ctx.session.themes = themes;
+
+              // Display themes
               await ctx.reply(
                 "Pick one theme. I'll write a short sci-fi story about it.",
                 {
@@ -360,6 +390,7 @@ export class TelegramService extends BaseService {
               await ctx.reply(
                 "Sorry, I had trouble reading those tweets. Please try again later."
               );
+
               return;
             }
           }
@@ -390,7 +421,7 @@ export class TelegramService extends BaseService {
           // Acknowledge the selection
           await ctx.answerCallbackQuery();
           await ctx.reply(
-            `Writing a story about: ${selectedTheme}... 🖋️\nThis might take a minute...`
+            `Writing a story about: ${selectedTheme}... 🖋️\nThis will take a minute. I'll write a story and then pass it to my editor...`
           );
 
           // Generate story using GaiaNet
