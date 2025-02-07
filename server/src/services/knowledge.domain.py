@@ -102,6 +102,28 @@ def save_individual_chunks(nodes: List, base_filename: str):
     
     print(f"Saved {len(nodes)} individual chunks in {chunks_dir}")
 
+def save_document_chunks(nodes: List, doc_index: int):
+    """
+    Save all chunks from one document into a single file in the chunks directory
+    """
+    # Create chunks directory if it doesn't exist
+    chunks_dir = os.path.join(root_dir, "chunks")
+    os.makedirs(chunks_dir, exist_ok=True)
+    
+    # Create filename for this document's chunks
+    doc_filename = f"document_{doc_index:04d}_chunks.txt"  # Pad with zeros for better sorting
+    doc_path = os.path.join(chunks_dir, doc_filename)
+    
+    print(f"Saving {len(nodes)} chunks from document {doc_index} to {doc_path}")
+    with open(doc_path, 'w', encoding='utf-8') as f:
+        for i, node in enumerate(nodes):
+            # Add a header for each chunk
+            f.write(f"=== Chunk {i+1} ===\n")
+            f.write(node.get_content())
+            f.write('\n\n')  # Add spacing between chunks
+    
+    print(f"Saved all chunks from document {doc_index} to {doc_path}")
+
 def load_and_process_data():
     """
     Load data from HuggingFace and convert to LlamaIndex documents
@@ -185,17 +207,15 @@ def load_and_process_data():
             print(f"Processing document {i+1}/{total_docs}, size: {len(doc.text)} characters")
             nodes = splitter.get_nodes_from_documents([doc])
             all_nodes.extend(nodes)  # Add nodes to collection
-
-            # Save individual chunks for this document in a subdirectory
-            doc_dirname = f"document_{i:04d}"  # Pad with zeros for better sorting
-            save_individual_chunks(nodes, doc_dirname)
-
+            
+            # Save all chunks from this document in one file
+            save_document_chunks(nodes, i)
+            
         except Exception as e:
             print(f"Error processing document {i}: {str(e)}")
             continue
 
-    # Save all nodes to a single file
-    print(f"\nSaving all {len(all_nodes)} nodes to final file...")
+    # Save all nodes to a single combined file
     save_nodes_to_file(all_nodes, "all_sci_fi_chunks.txt")
     print("Final file saved as: all_sci_fi_chunks.txt")
 
