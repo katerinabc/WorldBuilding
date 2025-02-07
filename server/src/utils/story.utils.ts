@@ -5,11 +5,13 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Debug: check if env variables are loaded
-console.log("Environment variables:", {
-  WALLET_PRIVATE_KEY: process.env.WALLET_PRIVATE_KEY ? "exists" : "undefined",
-  RPC_PROVIDER_URL: process.env.RPC_PROVIDER_URL ? "exists" : "undefined",
-});
+if (!process.env.WALLET_PRIVATE_KEY) {
+  throw new Error("WALLET_PRIVATE_KEY is required");
+}
+
+if (!process.env.RPC_PROVIDER_URL) {
+  throw new Error("RPC_PROVIDER_URL is required");
+}
 
 const privateKey: Address = `0x${process.env.WALLET_PRIVATE_KEY}`;
 export const account: Account = privateKeyToAccount(privateKey);

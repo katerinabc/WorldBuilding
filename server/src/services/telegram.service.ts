@@ -1,36 +1,40 @@
 import { Bot, webhookCallback } from "grammy";
+import { Context, session, SessionFlavor } from "grammy";
 import { BaseService } from "./base.service.js";
-import { ElizaService } from "./eliza.service.js";
+// import { ElizaService } from "./eliza.service.js";
 import {
-  AnyType,
+  // AnyType,
   getCollablandApiUrl,
-  getTokenMetadataPath,
-  MintResponse,
-  TokenMetadata,
+  // getTokenMetadataPath,
+  // MintResponse,
+  // TokenMetadata,
 } from "../utils.js";
-import fs from "fs";
-import axios, { AxiosResponse, isAxiosError } from "axios";
-import { parse as jsoncParse } from "jsonc-parser";
-import path, { resolve } from "path";
-import { keccak256, getBytes, toUtf8Bytes } from "ethers";
+// import fs from "fs";
+import axios from "axios";
+// import axios, { AxiosResponse, isAxiosError } from "axios";
+// import { parse as jsoncParse } from "jsonc-parser";
+// import path from "path";
+// import { keccak256, getBytes, toUtf8Bytes } from "ethers";
 import { TwitterService } from "./twitter.service.js";
-import { NgrokService } from "./ngrok.service.js";
+// import { NgrokService } from "./ngrok.service.js";
 import { TweetAnalyzerService } from "./tweet-analyzer.service.js";
 
-// hack to avoid 400 errors sending params back to telegram. not even close to perfect
-const htmlEscape = (_key: AnyType, val: AnyType) => {
-  if (typeof val === "string") {
-    return val
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;"); // single quote
-  }
-  return val;
-};
+// import { register } from "./story-register.service.js";
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
+// hack to avoid 400 errors sending params back to telegram. not even close to perfect
+// const _htmlEscape = (_key: AnyType, val: AnyType) => {
+//   if (typeof val === "string") {
+//     return val
+//       .replace(/&/g, "&amp;")
+//       .replace(/</g, "&lt;")
+//       .replace(/>/g, "&gt;")
+//       .replace(/"/g, "&quot;")
+//       .replace(/'/g, "&#39;"); // single quote
+//   }
+//   return val;
+// };
+
+// const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 // Add the interface
 interface ThemeAnalysis {
@@ -38,12 +42,23 @@ interface ThemeAnalysis {
   confidence: number;
 }
 
+// Define our session structure
+interface SessionData {
+  waitingFor?: "title" | "owner";
+  title?: string;
+  owner?: string;
+  story?: string;
+}
+
+// Add session to context type
+type MyContext = Context & SessionFlavor<SessionData>;
+
 export class TelegramService extends BaseService {
   private static instance: TelegramService;
-  private bot: Bot;
-  private webhookUrl: string;
-  private elizaService: ElizaService;
-  private nGrokService: NgrokService;
+  private bot: Bot<MyContext>;
+  private webhookUrl?: string;
+  // private elizaService: ElizaService;
+  // private nGrokService!: NgrokService;
   private twitterService?: TwitterService;
   private tweetAnalyzerService: TweetAnalyzerService;
 
@@ -55,8 +70,12 @@ export class TelegramService extends BaseService {
     if (webhookUrl != null) {
       this.webhookUrl = `${webhookUrl}/telegram/webhook`;
     }
-    this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
-    this.elizaService = ElizaService.getInstance(this.bot);
+    this.bot = new Bot<MyContext>(process.env.TELEGRAM_BOT_TOKEN);
+
+    // Initialize session middleware
+    this.bot.use(session({ initial: (): SessionData => ({}) }));
+
+    // this.elizaService = ElizaService.getInstance(this.bot); // I'm not using Eliza right now.
     this.tweetAnalyzerService = TweetAnalyzerService.getInstance();
   }
 
@@ -81,6 +100,8 @@ export class TelegramService extends BaseService {
   }
 
   public async start(): Promise<void> {
+    // @ts-expect-error - Keeping client for future Collab.Land API integration
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const client = axios.create({
       baseURL: getCollablandApiUrl(),
       headers: {
@@ -99,18 +120,16 @@ export class TelegramService extends BaseService {
         },
         { command: "feed", description: "Feed the bot tweets" },
         { command: "copyright", description: "get your story copy-righted" },
-        { command: "mint", description: "Mint a token on Wow.xyz" },
-        { command: "eliza", description: "Talk to the AI agent" },
-        { command: "lit", description: "Execute a Lit action" },
       ]);
       // all command handlers can be registered here
       this.bot.command("start", (ctx) => ctx.reply("Hello! I'm here"));
       this.bot.catch(async (error) => {
         console.error("Telegram bot error:", error);
       });
-      await this.elizaService.start();
+
       // required when starting server for telegram webooks
-      this.nGrokService = await NgrokService.getInstance();
+      // this.nGrokService = await NgrokService.getInstance();
+      // in the original collab.land telegram.service.ts file this.nGrokService.getURl() was later called in the mint function
       try {
         // try starting the twitter service
         this.twitterService = await TwitterService.getInstance();
@@ -143,21 +162,83 @@ export class TelegramService extends BaseService {
         }
       });
 
-      this.bot.command("copyright", async (ctx) => {
+      this.bot.command("copyright", async (ctx: MyContext) => {
         try {
           console.log("[COPYRIGHT] command received from:", ctx.from?.username);
 
-          await ctx.reply(
-            "Lets give you what is rightly you. I'll ask you for some info and then register your story on Story Protocol.\n" +
-              "If others use it you get paid."
-          );
-          await ctx.reply(
-            "first thing first, what's the title? write it as Title: your amazingly clever title"
-          );
+          if (!ctx.message?.reply_to_message?.text) {
+            await ctx.reply(
+              "To copyright your story:\n" +
+                "1. Post your story\n" +
+                "2. Reply to your story with /copyright\n\n" +
+                "This helps me know which story you want to register!"
+            );
+            return;
+          }
+
+          //     // Store the story in session
+          //     ctx.session.story = ctx.message.reply_to_message.text;
+          //     ctx.session.waitingFor = "title";
+
+          //     await ctx.reply(
+          //       "Let's register your story on Story Protocol.\n" +
+          //       "What's the title? Please reply with:\n" +
+          //       "Title: your title here"
+          //     );
+          //   } catch (error) {
+          //     console.error("[COPYRIGHT] command error:", error);
+          //     await ctx.reply("Sorry, there was an error. Please try again.");
+          //   }
+          // });
+
+          // // Title handler
+          // this.bot.hears(/^Title: (.+)$/i, async (ctx: MyContext) => {
+          //   if (ctx.session.waitingFor !== "title") return;
+
+          //   ctx.session.title = ctx.match[1].trim();
+          //   ctx.session.waitingFor = "owner";
+          //   await ctx.reply("Great! Now, what's the owner's wallet address? Reply with:\nOwner: wallet_address");
+          // });
+
+          // // Owner handler
+          // this.bot.hears(/^Owner: (.+)$/i, async (ctx: MyContext) => {
+          //   if (ctx.session.waitingFor !== "owner") return;
+
+          //   ctx.session.owner = ctx.match[1].trim();
+
+          //   try {
+          //     if (!ctx.session.title || !ctx.session.story || !ctx.session.owner) {
+          //       await ctx.reply("Missing required information. Please start over with /copyright");
+          //       return;
+          //     }
+
+          //     await ctx.reply(
+          //       `Registering your story with these details:\n` +
+          //       `Title: ${ctx.session.title}\n` +
+          //       `Story: ${ctx.session.story.substring(0, 100)}...\n` +
+          //       `Owner: ${ctx.session.owner}`
+          //     );
+
+          //     const registrationResponse = await register({
+          //       title: ctx.session.title,
+          //       description: ctx.session.story,
+          //       owner: ctx.session.owner
+          //     });
+
+          //     await ctx.reply(
+          //       `Story registered successfully!\n` +
+          //       `View on explorer: ${registrationResponse.explorerUrl}`
+          //     );
+
+          //     // Reset the session
+          //     ctx.session.waitingFor = undefined;
+          //     ctx.session.title = undefined;
+          //     ctx.session.owner = undefined;
+          //     ctx.session.story = undefined;
         } catch (error) {
-          console.error("[COPYRIGHT command error:", error);
+          console.error("[COPYRIGHT] Registration error:", error);
           await ctx.reply(
-            "oh shit, there's an error getting your IP registered. Try again?"
+            "Sorry, there was an error registering your story. Please try again."
           );
         }
       });
@@ -259,260 +340,6 @@ export class TelegramService extends BaseService {
           await ctx.reply(
             "Sorry, there was an error analyzing this Twitter profile."
           );
-        }
-      });
-
-      this.bot.command("mint", async (ctx) => {
-        try {
-          ctx.reply("Minting your token...");
-          const tokenPath = getTokenMetadataPath();
-          const tokenInfo = jsoncParse(
-            fs.readFileSync(tokenPath, "utf8")
-          ) as TokenMetadata;
-          console.log("TokenInfoToMint", tokenInfo);
-          console.log("Hitting Collab.Land APIs to mint token...");
-          const { data: _tokenData } = await client.post<
-            AnyType,
-            AxiosResponse<MintResponse>
-          >(`/telegrambot/evm/mint?chainId=8453`, {
-            name: tokenInfo.name,
-            symbol: tokenInfo.symbol,
-            metadata: {
-              description: tokenInfo.description ?? "",
-              website_link: tokenInfo.websiteLink ?? "",
-              twitter: tokenInfo.twitter ?? "",
-              discord: tokenInfo.discord ?? "",
-              telegram: tokenInfo.telegram ?? "",
-              media: tokenInfo.image ?? "",
-              nsfw: tokenInfo.nsfw ?? false,
-            },
-          });
-          console.log("Mint response from Collab.Land:");
-          console.dir(_tokenData, { depth: null });
-          const tokenData = _tokenData.response.contract.fungible;
-          await ctx.reply(
-            `Your token has been minted on wow.xyz 🥳
-Token details:
-<pre><code class="language-json">${JSON.stringify(tokenData, null, 2)}</code></pre>
-
-You can view the token page below (it takes a few minutes to be visible)`,
-            {
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    {
-                      text: "View Wow.xyz Token Page",
-                      url: `https://wow.xyz/${tokenData.address}`,
-                    },
-                  ],
-                ],
-              },
-              parse_mode: "HTML",
-            }
-          );
-          if (this.twitterService) {
-            const twitterBotInfo = this.twitterService.me;
-            const twitterClient = this.twitterService.getScraper();
-            const ngrokURL = this.nGrokService.getUrl();
-            await ctx.reply(
-              `🐦 Posting a tweet about the new token...\n\n` +
-                `Twitter account details:\n<pre lang="json"><code>${JSON.stringify(
-                  twitterBotInfo,
-                  null,
-                  2
-                )}</code></pre>`,
-              {
-                parse_mode: "HTML",
-              }
-            );
-            const claimURL = `${process.env.NEXT_PUBLIC_HOSTNAME}/claim/${tokenData.address}`;
-            const botUsername = twitterBotInfo?.username;
-            console.log("botUsername:", botUsername);
-            console.log("claimURL:", claimURL);
-            const slug =
-              Buffer.from(claimURL).toString("base64url") +
-              ":" +
-              Buffer.from(botUsername!).toString("base64url");
-            console.log("slug:", slug);
-            const cardURL = `${ngrokURL}/auth/twitter/card/${slug}/index.html`;
-            console.log("cardURL:", cardURL);
-            const twtRes = await twitterClient.sendTweet(
-              `I just minted a token on Base using Wow!\nThe ticker is $${tokenData.symbol}\nClaim early alpha here: ${cardURL}`
-            );
-            if (twtRes.ok) {
-              const tweetId = (await twtRes.json()) as AnyType;
-              console.log("Tweet posted successfully:", tweetId);
-              const tweetURL = `https://twitter.com/${twitterBotInfo?.username}/status/${tweetId?.data?.create_tweet?.tweet_results?.result?.rest_id}`;
-              console.log("Tweet URL:", tweetURL);
-              await ctx.reply(
-                `Tweet posted successfully!\n\n` +
-                  `🎉 Tweet details: ${tweetURL}`,
-                {
-                  parse_mode: "HTML",
-                }
-              );
-            } else {
-              console.error("Failed to post tweet:", await twtRes.json());
-              await ctx.reply("Failed to post tweet");
-            }
-          }
-        } catch (error) {
-          if (isAxiosError(error)) {
-            console.error("Failed to mint token:", error.response?.data);
-          } else {
-            console.error("Failed to mint token:", error);
-          }
-          ctx.reply("Failed to mint token");
-        }
-      });
-      this.bot.command("lit", async (ctx) => {
-        try {
-          const action = ctx.match;
-          console.log("action:", action);
-          const actionHashes = JSON.parse(
-            (
-              await fs.readFileSync(
-                resolve(
-                  __dirname,
-                  "..",
-                  "..",
-                  "..",
-                  "lit-actions",
-                  "actions",
-                  `ipfs.json`
-                )
-              )
-            ).toString()
-          );
-          console.log("actionHashes:", actionHashes);
-          const actionHash = actionHashes[action];
-          console.log("actionHash:", actionHash);
-          if (!actionHash) {
-            ctx.reply(`Action not found: ${action}`);
-            return;
-          }
-          // ! NOTE: You can send any jsParams you want here, it depends on your Lit action code
-          let jsParams;
-          // ! NOTE: You can change the chainId to any chain you want to execute the action on
-          const chainId = 8453;
-          switch (action) {
-            case "hello-action": {
-              // ! NOTE: The message to sign can be any normal message, or raw TX
-              // ! In order to sign EIP-191 message, you need to encode it properly, Lit protocol does raw signatures
-              const messageToSign =
-                ctx.from?.username ?? ctx.from?.first_name ?? "";
-              const messageToSignDigest = keccak256(toUtf8Bytes(messageToSign));
-              jsParams = {
-                helloName: messageToSign,
-                toSign: Array.from(getBytes(messageToSignDigest)),
-              };
-              break;
-            }
-            case "decrypt-action": {
-              const toEncrypt = `encrypt-decrypt-test-${new Date().toUTCString()}`;
-              ctx.reply(`Invoking encrypt action with ${toEncrypt}`);
-              const { data } = await client.post(
-                `/telegrambot/executeLitActionUsingPKP?chainId=${chainId}`,
-                {
-                  actionIpfs: actionHashes["encrypt-action"].IpfsHash,
-                  actionJsParams: {
-                    toEncrypt,
-                  },
-                }
-              );
-              console.log("encrypt response ", data);
-              const { ciphertext, dataToEncryptHash } = JSON.parse(
-                data.response.response
-              );
-              jsParams = {
-                ciphertext,
-                dataToEncryptHash,
-                chain: "base",
-              };
-              break;
-            }
-            case "encrypt-action": {
-              const message =
-                ctx.from?.username ?? ctx.from?.first_name ?? "test data";
-              jsParams = {
-                toEncrypt: `${message}-${new Date().toUTCString()}`,
-              };
-              break;
-            }
-            default: {
-              // they typed something random or a dev forgot to update this list
-              ctx.reply(`Action not handled: ${action}`);
-              return;
-            }
-          }
-          await ctx.reply(
-            "Executing action..." +
-              `\n\nAction Hash: <code>${actionHash.IpfsHash}</code>\n\nParams:\n<pre lang="json"><code>${JSON.stringify(
-                jsParams,
-                htmlEscape,
-                2
-              )}</code></pre>`,
-            {
-              parse_mode: "HTML",
-            }
-          );
-          console.log(
-            `[telegram.service] executing lit action with hash ${actionHash.IpfsHash} on chain ${chainId}`
-          );
-          const { data } = await client.post(
-            `/telegrambot/executeLitActionUsingPKP?chainId=${chainId}`,
-            {
-              actionIpfs: actionHash.IpfsHash,
-              actionJsParams: jsParams,
-            }
-          );
-          console.log(
-            `Action with hash ${actionHash.IpfsHash} executed on Lit Nodes 🔥`
-          );
-          console.log("Result:", data);
-          ctx.reply(
-            `Action executed on Lit Nodes 🔥\n\n` +
-              `Action: <code>${actionHash.IpfsHash}</code>\n` +
-              `Result:\n<pre lang="json"><code>${JSON.stringify(
-                data,
-                null,
-                2
-              )}</code></pre>`,
-            {
-              parse_mode: "HTML",
-            }
-          );
-        } catch (error) {
-          if (isAxiosError(error)) {
-            console.error(
-              "Failed to execute Lit action:",
-              error.response?.data
-            );
-            ctx.reply(
-              "Failed to execute Lit action" +
-                `\n\nError: <pre lang="json"><code>${JSON.stringify(
-                  error.response?.data,
-                  null,
-                  2
-                )}</code></pre>`,
-              {
-                parse_mode: "HTML",
-              }
-            );
-          } else {
-            console.error("Failed to execute Lit action:", error);
-            ctx.reply(
-              "Failed to execute Lit action" +
-                `\n\nError: <pre lang="json"><code>${JSON.stringify(
-                  error?.message,
-                  null,
-                  2
-                )}</code></pre>`,
-              {
-                parse_mode: "HTML",
-              }
-            );
-          }
         }
       });
     } catch (error) {
