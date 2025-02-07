@@ -84,6 +84,24 @@ def clean_gutenberg_text(text):
             text = text[:start_idx] + text[end_idx:]
     return text
 
+def save_individual_chunks(nodes: List, base_filename: str):
+    """
+    Save each node/chunk as a separate file in the chunks directory
+    """
+    # Create chunks directory if it doesn't exist
+    chunks_dir = os.path.join(root_dir, "chunks", base_filename)
+    os.makedirs(chunks_dir, exist_ok=True)
+    
+    print(f"Saving {len(nodes)} individual chunks to {chunks_dir}")
+    for i, node in enumerate(nodes):
+        chunk_filename = f"chunk_{i:04d}.txt"  # Pad with zeros for better sorting
+        chunk_path = os.path.join(chunks_dir, chunk_filename)
+        
+        with open(chunk_path, 'w', encoding='utf-8') as f:
+            f.write(node.get_content())
+    
+    print(f"Saved {len(nodes)} individual chunks in {chunks_dir}")
+
 def load_and_process_data():
     """
     Load data from HuggingFace and convert to LlamaIndex documents
@@ -110,14 +128,15 @@ def load_and_process_data():
     
     # getting subset of documents
     # experiment with the best subset size. Ideally take everything around the average (+/- 1 stedv)
+    # on a larger machine, you can take all the documents. 
     print("Creating the subset of documents...")
-    df_small = df[df['length'] <  avg]
-    print(f"subset as {len(df_small)} documents out of {lenoriginal}. ")
+    df = df[df['length'] <  avg]
+    print(f"subset as {len(df)} documents out of {lenoriginal}. ")
 
     # Convert DataFrame rows to Documents starting with shortest text
     print("Converting DataFrame to Documents...")
     # Sort by length (shortest first). begin embedding with the shortest
-    df_small = df[df['length'] < avg].sort_values('length')
+    df = df[df['length'] < avg].sort_values('length')
     
     # Convert DataFrame rows to Documents
     print("Converting DataFrame to Documents...")
@@ -153,23 +172,34 @@ def load_and_process_data():
         chunk_overlap=50
     )
     
+    # # Skip first 200 documents
+    # df = df.iloc[200:]
+    # print(f"After skipping 200 docs, dataset has {len(df)} documents")
+
     # Process documents into nodes
     print("Splitting documents into chunks...")
+    all_nodes = []  # Collect all nodes
     total_docs = len(documents)
     for i, doc in enumerate(documents):
         try:
             print(f"Processing document {i+1}/{total_docs}, size: {len(doc.text)} characters")
-            nodes = splitter.get_nodes_from_documents([doc])  # Process one document at a time
-            save_nodes_to_file(nodes, f"chunks_{i}.txt")  # Save chunks for each document
+            nodes = splitter.get_nodes_from_documents([doc])
+            all_nodes.extend(nodes)  # Add nodes to collection
+
+            # Save individual chunks for this document in a subdirectory
+            doc_dirname = f"document_{i:04d}"  # Pad with zeros for better sorting
+            save_individual_chunks(nodes, doc_dirname)
+
         except Exception as e:
             print(f"Error processing document {i}: {str(e)}")
             continue
-    print(f"Created {len(nodes)} nodes")
-    
-    # Save nodes in Gaia-compatible format
-    save_nodes_to_file(nodes)
 
-    return "processing complete"
+    # Save all nodes to a single file
+    print(f"\nSaving all {len(all_nodes)} nodes to final file...")
+    save_nodes_to_file(all_nodes, "all_sci_fi_chunks.txt")
+    print("Final file saved as: all_sci_fi_chunks.txt")
+
+    return "Processing complete"
 
 # Validate Gaia endpoint
 def validate_gaia_endpoint():
@@ -208,4 +238,4 @@ if __name__ == "__main__":
     # validate_gaia_endpoint()
     nodes = load_and_process_data()
     print(f"Successfully processed {len(nodes)} nodes")
-    return nodes
+    # return nodes
