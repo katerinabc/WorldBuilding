@@ -421,18 +421,25 @@ export class TelegramService extends BaseService {
           // Acknowledge the selection
           await ctx.answerCallbackQuery();
           await ctx.reply(
-            `Writing a story about: ${selectedTheme}... 🖋️\nThis will take a minute. I'll write a story and then pass it to my editor...`
+            `Writing a story about: ${selectedTheme}... 🖋️\nThis might take a minute...`
           );
 
-          // Generate story using GaiaNet
+          // Generate and send story
           const story = await this.gaiaService.generateStory(selectedTheme);
+          const storyMessage = await ctx.reply(story);
 
-          // Send the story
-          await ctx.reply(story);
-        } catch (error) {
-          console.error("[Theme Selection] Error:", error);
+          // Wait a short moment to ensure order
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          // Send options as a reply to the story
           await ctx.reply(
-            "Sorry, there was an error generating your story. Please try again."
+            "This is the best I can do right now. You can ask me to write another story (just select a theme at the top) or copyright the story.",
+            { reply_to_message_id: storyMessage.message_id }
+          );
+        } catch (error) {
+          console.error("[Themed Selection] Error:", error);
+          await ctx.reply(
+            "I can't. I just can't. Give me a sec and try again."
           );
         }
       });
