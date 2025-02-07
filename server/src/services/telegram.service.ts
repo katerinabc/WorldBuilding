@@ -2,6 +2,7 @@ import { Bot, webhookCallback } from "grammy";
 import { Context, session, SessionFlavor } from "grammy";
 import { BaseService } from "./base.service.js";
 import { register } from "./story-register.service.js";
+import { GaiaNetService } from "./gaianet.service.js";
 // import { ElizaService } from "./eliza.service.js";
 import {
   // AnyType,
@@ -49,6 +50,7 @@ interface SessionData {
   title?: string;
   owner?: string;
   story?: string;
+  themes?: ThemeAnalysis[];
 }
 
 // Add session to context type
@@ -62,9 +64,11 @@ export class TelegramService extends BaseService {
   // private nGrokService!: NgrokService;
   private twitterService?: TwitterService;
   private tweetAnalyzerService: TweetAnalyzerService;
+  private gaiaService: GaiaNetService;
 
   private constructor(webhookUrl?: string) {
     super();
+    this.gaiaService = GaiaNetService.getInstance();
     if (!process.env.TELEGRAM_BOT_TOKEN) {
       throw new Error("TELEGRAM_BOT_TOKEN is required");
     }
@@ -260,6 +264,8 @@ export class TelegramService extends BaseService {
 
       this.bot.on("message:text", async (ctx) => {
         try {
+          if (!ctx.message) return;
+          if (!ctx.message.text) return;
           const text = ctx.message.text;
           console.log("\n[URL] Received message:", text);
 
@@ -327,21 +333,28 @@ export class TelegramService extends BaseService {
               console.log("[URL] Analysis complete. Themes:", themes);
               await ctx.reply("Spitting out those 5 themes for you! 🎯");
 
+              // Store themes in session
+              ctx.session.themes = themes;
+
               const keyboard = themes
                 .slice(0, 5)
                 .map((theme: ThemeAnalysis, index: number) => [
                   {
-                    text: `${index + 1}. ${theme.theme} (${theme.confidence}%)`,
+                    // text: `${index + 1}. ${theme.theme} (${theme.confidence}%)`,
+                    text: `${theme.theme}`,
                     callback_data: `theme_${index}`,
                   },
                 ]);
 
               console.log("[URL] Sending themes to user");
-              await ctx.reply("Pick your favorite theme:", {
-                reply_markup: {
-                  inline_keyboard: keyboard,
-                },
-              });
+              await ctx.reply(
+                "Pick one theme. I'll write a short sci-fi story about it.",
+                {
+                  reply_markup: {
+                    inline_keyboard: keyboard,
+                  },
+                }
+              );
             } catch (error) {
               console.error("[URL] Error:", error);
               await ctx.reply(
@@ -354,6 +367,41 @@ export class TelegramService extends BaseService {
           console.error("[URL] Error:", error);
           await ctx.reply(
             "Sorry, there was an error analyzing this Twitter profile."
+          );
+        }
+      });
+
+      // Add callback query handler for theme selection
+      this.bot.on("callback_query", async (ctx) => {
+        try {
+          if (!ctx.callbackQuery.data?.startsWith("theme_")) return;
+
+          if (!ctx.session.themes) {
+            await ctx.reply(
+              "Sorry, I can't find the themes. Please try again."
+            );
+            return;
+          }
+          const themeIndex = parseInt(
+            ctx.callbackQuery.data.replace("theme_", "")
+          );
+          const selectedTheme = ctx.session.themes[themeIndex].theme;
+
+          // Acknowledge the selection
+          await ctx.answerCallbackQuery();
+          await ctx.reply(
+            `Writing a story about: ${selectedTheme}... 🖋️\nThis might take a minute...`
+          );
+
+          // Generate story using GaiaNet
+          const story = await this.gaiaService.generateStory(selectedTheme);
+
+          // Send the story
+          await ctx.reply(story);
+        } catch (error) {
+          console.error("[Theme Selection] Error:", error);
+          await ctx.reply(
+            "Sorry, there was an error generating your story. Please try again."
           );
         }
       });
