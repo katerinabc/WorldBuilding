@@ -5,7 +5,7 @@ import { Tweet } from "agent-twitter-client";
 
 export interface ThemeAnalysis {
   theme: string;
-  confidence: number;
+  // confidence: number;
 }
 
 export class TweetAnalyzerService extends BaseService {

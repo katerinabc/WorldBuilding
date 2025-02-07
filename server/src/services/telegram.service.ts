@@ -2,6 +2,7 @@ import { Bot, webhookCallback } from "grammy";
 import { Context, session, SessionFlavor } from "grammy";
 import { BaseService } from "./base.service.js";
 import { register } from "./story-register.service.js";
+import { GaiaNetService } from "./gaianet.service.js";
 // import { ElizaService } from "./eliza.service.js";
 import {
   // AnyType,
@@ -20,35 +21,21 @@ import { TwitterService } from "./twitter.service.js";
 // import { NgrokService } from "./ngrok.service.js";
 import { TweetAnalyzerService } from "./tweet-analyzer.service.js";
 
-// import { register } from "./story-register.service.js";
-
-// hack to avoid 400 errors sending params back to telegram. not even close to perfect
-// const _htmlEscape = (_key: AnyType, val: AnyType) => {
-//   if (typeof val === "string") {
-//     return val
-//       .replace(/&/g, "&amp;")
-//       .replace(/</g, "&lt;")
-//       .replace(/>/g, "&gt;")
-//       .replace(/"/g, "&quot;")
-//       .replace(/'/g, "&#39;"); // single quote
-//   }
-//   return val;
-// };
-
-// const __dirname = path.dirname(new URL(import.meta.url).pathname);
-
 // Add the interface
 interface ThemeAnalysis {
   theme: string;
-  confidence: number;
+  // confidence: number;
 }
 
 // Define our session structure
 interface SessionData {
-  waitingFor?: "title" | "owner";
+  waitingFor?: "title" | "owner" | "image" | "theme";
   title?: string;
   owner?: string;
+  image?: string;
   story?: string;
+  analyzedThemes?: ThemeAnalysis[];
+  theme?: string;
 }
 
 // Add session to context type
@@ -62,9 +49,11 @@ export class TelegramService extends BaseService {
   // private nGrokService!: NgrokService;
   private twitterService?: TwitterService;
   private tweetAnalyzerService: TweetAnalyzerService;
+  private gaiaService: GaiaNetService;
 
   private constructor(webhookUrl?: string) {
     super();
+    this.gaiaService = GaiaNetService.getInstance();
     if (!process.env.TELEGRAM_BOT_TOKEN) {
       throw new Error("TELEGRAM_BOT_TOKEN is required");
     }
@@ -179,8 +168,18 @@ export class TelegramService extends BaseService {
 
           // Store the story in session
           ctx.session.story = ctx.message.reply_to_message.text;
-          ctx.session.waitingFor = "title";
 
+          // Check for theme first
+          if (!ctx.session.theme) {
+            ctx.session.waitingFor = "theme";
+            await ctx.reply(
+              "Please provide a theme for your story. Reply with:\nTheme: your_theme"
+            );
+            return;
+          }
+
+          // If we have a theme, ask for title
+          ctx.session.waitingFor = "title";
           await ctx.reply(
             "Let's register your story on Story Protocol.\n" +
               "What's the title? Please reply with:\n" +
@@ -192,19 +191,30 @@ export class TelegramService extends BaseService {
         }
       });
 
+      // After theme is set, continue with title
+      this.bot.hears(/^Theme: (.+)$/i, async (ctx: MyContext) => {
+        if (ctx.session.waitingFor !== "theme") return;
+
+        if (ctx.match?.[1]) {
+          ctx.session.theme = ctx.match[1].trim();
+          ctx.session.waitingFor = "title";
+          await ctx.reply(
+            "Great! Now what's the title? Please reply with:\n" +
+              "Title: your title here"
+          );
+        }
+      });
+
       // Title handler
       this.bot.hears(/^Title: (.+)$/i, async (ctx: MyContext) => {
         if (ctx.session.waitingFor !== "title") return;
 
-        if (ctx.match && ctx.match[1]) {
-          //check if ctx.match is defined
+        if (ctx.match?.[1]) {
           ctx.session.title = ctx.match[1].trim();
           ctx.session.waitingFor = "owner";
           await ctx.reply(
             "Great! Now, what's the owner's wallet address? Reply with:\nOwner: wallet_address"
           );
-        } else {
-          await ctx.reply(" I'm a machine. Give me a title");
         }
       });
 
@@ -212,32 +222,43 @@ export class TelegramService extends BaseService {
       this.bot.hears(/^Owner: (.+)$/i, async (ctx: MyContext) => {
         if (ctx.session.waitingFor !== "owner") return;
 
-        if (ctx.match && ctx.match[1]) {
-          //check if ctx.match is defined
+        if (ctx.match?.[1]) {
           ctx.session.owner = ctx.match[1].trim();
-        } else {
-          await ctx.reply(" I'm a machine. Give me an owner");
+          ctx.session.waitingFor = "image";
+          await ctx.reply("Great! Now, please upload an image for your story.");
         }
+      });
+
+      // Image handler
+      this.bot.on("message:photo", async (ctx: MyContext) => {
+        if (ctx.session.waitingFor !== "image") return;
 
         try {
-          if (!ctx.session.title || !ctx.session.story || !ctx.session.owner) {
-            await ctx.reply(
-              "Missing required information. Please start over with /copyright"
-            );
-            return;
-          }
+          if (!ctx.message?.photo) return;
 
+          const photos = ctx.message.photo;
+          const photo = photos[photos.length - 1];
+          const file = await ctx.api.getFile(photo.file_id);
+          const fileUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
+
+          ctx.session.image = fileUrl;
+
+          // Proceed with registration
           await ctx.reply(
             `Registering your story with these details:\n` +
               `Title: ${ctx.session.title}\n` +
-              `Story: ${ctx.session.story.substring(0, 100)}...\n` +
-              `Owner: ${ctx.session.owner}`
+              `Story: ${(ctx.session.story ?? "").substring(0, 100)}...\n` +
+              `Owner: ${ctx.session.owner}\n` +
+              `Theme: ${ctx.session.theme}\n` +
+              `Image: ✓ Uploaded`
           );
 
           const registrationResponse = await register({
-            title: ctx.session.title,
-            description: ctx.session.story,
-            owner: ctx.session.owner,
+            title: ctx.session.title!,
+            description: ctx.session.story!,
+            owner: ctx.session.owner!,
+            theme: ctx.session.theme!,
+            image: ctx.session.image!,
           });
 
           await ctx.reply(
@@ -245,16 +266,16 @@ export class TelegramService extends BaseService {
               `View on explorer: ${registrationResponse.explorerUrl}`
           );
 
-          // Reset the session
+          // Reset session
           ctx.session.waitingFor = undefined;
           ctx.session.title = undefined;
           ctx.session.owner = undefined;
           ctx.session.story = undefined;
+          ctx.session.image = undefined;
+          ctx.session.theme = undefined;
         } catch (error) {
-          console.error("[COPYRIGHT] Registration error:", error);
-          await ctx.reply(
-            "Sorry, there was an error registering your story. Please try again."
-          );
+          console.error("[IMAGE_UPLOAD] Error:", error);
+          await ctx.reply("Sorry, there was an error processing your image.");
         }
       });
 
@@ -324,17 +345,17 @@ export class TelegramService extends BaseService {
               const themes =
                 await this.tweetAnalyzerService.analyzeTweets(tweets);
 
+              ctx.session.analyzedThemes = themes;
+
               console.log("[URL] Analysis complete. Themes:", themes);
               await ctx.reply("Spitting out those 5 themes for you! 🎯");
 
-              const keyboard = themes
-                .slice(0, 5)
-                .map((theme: ThemeAnalysis, index: number) => [
-                  {
-                    text: `${index + 1}. ${theme.theme} (${theme.confidence}%)`,
-                    callback_data: `theme_${index}`,
-                  },
-                ]);
+              const keyboard = themes.slice(0, 5).map((theme, index) => [
+                {
+                  text: `${index + 1}. ${theme.theme}`,
+                  callback_data: `theme_${index}`,
+                },
+              ]);
 
               console.log("[URL] Sending themes to user");
               await ctx.reply("Pick your favorite theme:", {
@@ -354,6 +375,48 @@ export class TelegramService extends BaseService {
           console.error("[URL] Error:", error);
           await ctx.reply(
             "Sorry, there was an error analyzing this Twitter profile."
+          );
+        }
+      });
+
+      // Add callback query handler for theme selection
+      this.bot.on("callback_query", async (ctx) => {
+        try {
+          if (!ctx.callbackQuery.data?.startsWith("theme_")) return;
+
+          if (!ctx.session.analyzedThemes) {
+            await ctx.reply(
+              "Sorry, I can't find the themes. Please try again."
+            );
+            return;
+          }
+          const themeIndex = parseInt(
+            ctx.callbackQuery.data.replace("theme_", "")
+          );
+          const selectedTheme = ctx.session.analyzedThemes[themeIndex].theme;
+
+          // Acknowledge the selection
+          await ctx.answerCallbackQuery();
+          await ctx.reply(
+            `Writing a story about: ${selectedTheme}... 🖋️\nThis will for sure take a minute...`
+          );
+
+          // Generate and send story
+          const story = await this.gaiaService.generateStory(selectedTheme);
+          const storyMessage = await ctx.reply(story);
+
+          // Wait a short moment to ensure order
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          // Send options as a reply to the story
+          await ctx.reply(
+            "This is the best I can do right now. You can ask me to write another story (just select a theme at the top) or copyright the story.",
+            { reply_to_message_id: storyMessage.message_id }
+          );
+        } catch (error) {
+          console.error("[Themed Selection] Error:", error);
+          await ctx.reply(
+            "I can't. I just can't. Give me a sec and try again."
           );
         }
       });
