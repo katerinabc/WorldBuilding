@@ -28,9 +28,9 @@ export class TweetAnalyzerService extends BaseService {
     try {
       console.log(`[INFO] Analyzing ${tweets.length} tweets`);
 
-      // Log each tweet with counter and handle undefined text
+      // Log each tweet with counter
       tweets.forEach((tweet: Tweet, index: number) => {
-        const tweetText = tweet.text || ""; // Handle undefined text
+        const tweetText = tweet.text || "";
         console.log(
           `[Tweet ${index + 1}/${tweets.length}]:`,
           tweetText.substring(0, 50) + "..."
@@ -45,7 +45,7 @@ export class TweetAnalyzerService extends BaseService {
 
       console.log(`[INFO] Total characters to analyze: ${tweetText.length}`);
 
-      // Use GaiaNet for theme analysis
+      // Send to GaiaNet for analysis
       console.log("\n[INFO] Starting GaiaNet theme analysis");
       const startTime = Date.now();
       const themes = await this.gaiaService.analyzeThemes(tweetText);
