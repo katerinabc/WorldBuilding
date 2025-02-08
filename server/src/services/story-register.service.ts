@@ -17,6 +17,8 @@ interface StoryMetadata {
   title: string;
   description: string;
   owner: string;
+  theme: string;
+  image: string;
 }
 
 interface RegistrationResponse {
@@ -38,15 +40,17 @@ export async function register(
 
     // Generate IP metadata
     const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
-      // title: metadata.title,
-      title: "purple beach",
+      title: metadata.title,
       description: metadata.description,
       ipType: "text",
-      // image: "https://picsum.photos/200",
       attributes: [
         {
           key: "Story",
           value: metadata.description,
+        },
+        {
+          key: "Theme",
+          value: metadata.theme,
         },
       ],
       creators: [
@@ -59,14 +63,17 @@ export async function register(
     });
 
     const nftMetadata = {
-      // name: metadata.title,
-      name: "purple beach",
+      name: metadata.title,
       description: `Ownership NFT for article: ${metadata.title} `,
-      image: "https://picsum.photos/200",
+      image: metadata.image,
       attributes: [
         {
-          key: "Article Text",
+          key: "Story",
           value: metadata.description,
+        },
+        {
+          key: "Theme",
+          value: metadata.theme,
         },
       ],
     };

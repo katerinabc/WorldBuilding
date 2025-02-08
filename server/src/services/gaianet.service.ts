@@ -105,7 +105,7 @@ export class GaiaNetService extends BaseService {
           return {
             theme,
             description: theme, // Using same text for description
-            confidence: 0.9,
+            // confidence: 0.9,
           };
         });
 

@@ -1,3 +1,22 @@
+
+# TODO
+- Better instructions. Make clear instructions when a user selects start.
+- feed it: Make it clear it can be any twitter profile
+- feed it: make it so that it can also onlybe the handle (Nice to have)
+- reply after story: If you want to copyright it, select it from the menue
+- copyright: reply to the story with copyright
+- attach license terms to the story. 
+
+REGISTER FLOW
+- tried to register it using the dev wallet that as IP on aeneid but still empty NFT
+-> test with file that worked before. 
+
+AGENT:
+- improve the prompt. the final story is not creative enough. 
+- add a flow: rewrite the story with these elements (user prompt)
+so we have:themes from user (agent) --> user picks theme --> write story 1 (agent)--> edit story 1 (agent) --> edit story 1 (user) --> copyright story 1 (agent) OR start again
+
+
 # 🤖 AI Agent Starter Kit
 
 A modern full-stack AI-enabled template using Next.js for frontend and Express.js for backend, with Telegram and OpenAI integrations! ✨
