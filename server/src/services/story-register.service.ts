@@ -115,6 +115,11 @@ export async function register(
       "checking ipfs url for nft metadata uri: ",
       `https://ipfs.io/ipfs/${nftIpfsHash}`
     );
+
+    // // check balance
+    // const balance = await checkStoryBalance(client);
+    // console.log(`Proceeding with registration. Current balance: ${balance} ETH`);
+
     // Register with Story Protocol
     //tODO: REPALCE WITH registerIpAndAttachPilTerms
     const response = await client.ipAsset.mintAndRegisterIp({
@@ -147,3 +152,20 @@ export async function register(
     throw error;
   }
 }
+
+// async function checkStoryBalance(client: any) {
+//   try {
+//     const balance = await client.provider.getBalance(client.account.address);
+//     const formattedBalance = Number(balance) / 1e18; // Convert from wei to ETH
+//     console.log("Story Protocol Balance:", formattedBalance, "ETH");
+
+//     if (formattedBalance < 0.1) {
+//       throw new Error(`Insufficient balance for Story Protocol operations. Current balance: ${formattedBalance} ETH. Please get test ETH from the Story Protocol Discord faucet.`);
+//     }
+
+//     return formattedBalance;
+//   } catch (error) {
+//     console.error("Failed to check balance:", error);
+//     throw error;
+//   }
+// }

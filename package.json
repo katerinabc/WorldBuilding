@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@ngrok/ngrok": "^1.4.1",
+    "@types/node-fetch": "2.6.11",
     "auto-changelog": "^2.4.0",
     "concurrently": "^8.2.2",
     "dotenv": "^16.4.5",

@@ -1,9 +1,17 @@
 import { StoryClient, StoryConfig } from "@story-protocol/core-sdk";
 import { http } from "viem";
 import { privateKeyToAccount, Address, Account } from "viem/accounts";
-import dotenv from "dotenv";
+import { resolve, dirname } from "path";
+import { config as dotenv } from "dotenv";
+import { fileURLToPath } from "url";
 
-dotenv.config();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load .env from server directory
+dotenv({ path: resolve(__dirname, "../../.env") });
+
+console.log("Loaded env from:", resolve(__dirname, "../.env"));
+console.log("WALLET_PRIVATE_KEY exists:", !!process.env.WALLET_PRIVATE_KEY);
 
 if (!process.env.WALLET_PRIVATE_KEY) {
   throw new Error("WALLET_PRIVATE_KEY is required");
