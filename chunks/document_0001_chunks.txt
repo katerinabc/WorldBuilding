@@ -1,0 +1,6 @@
+=== Chunk 1 ===
+b'\xef\xbb\xbfThe Project Gutenberg eBook of Wake (First 25,000 words)\r\n    \r\nThis ebook is for the use of anyone anywhere in the United States and\r\nmost other parts of the world at no cost and with almost no restrictions\r\nwhatsoever. You may copy it, give it away or re-use it under the terms\r\nof the Project Gutenberg License included with this ebook or online\r\nat www.gutenberg.org. If you are not located in the United States,\r\nyou will have to check the laws of the country where you are located\r\nbefore using this eBook.\r\n\r\n*** This is a COPYRIGHTED Project Gutenberg eBook. Details Below. 
+
+=== Chunk 2 ===
+***\r\n***     Please follow the copyright guidelines in this file.      ***\r\n\r\n\r\nTitle: Wake (First 25,000 words)\r\n\r\n\r\nAuthor: Robert J. Sawyer\r\n\r\nRelease date: August 8, 2010 [eBook #33374]\r\n\r\nLanguage: English\r\n\r\n\r\n\r\n*** START OF THE PROJECT GUTENBERG EBOOK WAKE (FIRST 25,000 WORDS) ***\r\n\r\n\r\nCopyright (C) 2009 by SFWRITER.COM Inc.\r\n\r\n\r\n\r\nThis eBook is available in RTF format, please see the accompanying\r\nfiles.  Note that it is an extract only, provided by the author.\r\n\r\n\r\n\r\n\r\n\r\n        \r\n
+

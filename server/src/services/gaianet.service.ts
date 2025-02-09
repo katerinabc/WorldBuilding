@@ -36,6 +36,7 @@ export class GaiaNetService extends BaseService {
       Format your response in markdown. The theme is the heading. It is a single word. 
       The description is a 100 character description of the theme. 
       Confidence level is how confident you are that the user talks abotu this theme. 
+      Only include 5 times not more. 
 
       IN the theme do not include words like 
       - "the role of"
@@ -58,31 +59,45 @@ export class GaiaNetService extends BaseService {
   }
 
   private async makeRequest(prompt: string, temperature: number) {
-    return axios.post(
-      `${process.env.GAIANET_SERVER_URL}/chat/completions`,
-      {
-        messages: [
-          {
-            role: "system",
-            content:
-              "you are a helpful assistant and return responses in the required format. you stick to the rules",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        model: process.env.GAIANET_MODEL,
-        temperature: temperature,
-        max_tokens: 500,
-      },
-      {
-        headers: {
-          accept: "application/json",
-          "content-type": "application/json",
+    try {
+      console.log(
+        "[GaiaNet] Making request with prompt:",
+        prompt.substring(0, 100) + "..."
+      );
+      const response = await axios.post(
+        `${process.env.GAIANET_SERVER_URL}/chat/completions`,
+        {
+          messages: [
+            {
+              role: "system",
+              content:
+                "you are a helpful assistant and return responses in the required format. you stick to the rules",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          model: process.env.GAIANET_MODEL,
+          temperature: temperature,
+          max_tokens: 500,
         },
+        {
+          headers: {
+            accept: "application/json",
+            "content-type": "application/json",
+          },
+        }
+      );
+      console.log("[GaiaNet] Response:", response.data.choices[0].message);
+      return response;
+    } catch (error) {
+      console.error("[GaiaNet] makeRequest error:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("[GaiaNet] Response data:", error.response?.data);
       }
-    );
+      throw error;
+    }
   }
 
   private parseMarkdownResponse(response: GaiaNetResponse): ThemeAnalysis[] {
@@ -215,7 +230,7 @@ export class GaiaNetService extends BaseService {
         `;
 
       // Generate initial story
-      const storyResponse = await this.makeRequest(prompt_creative, 0.5);
+      const storyResponse = await this.makeRequest(prompt_creative, 0.75);
       const initialStory = storyResponse.data.choices[0].message.content;
 
       // Second prompt for editing
@@ -231,8 +246,31 @@ export class GaiaNetService extends BaseService {
       // Edit the story
       const editResponse = await this.makeRequest(prompt_editor, 0.9);
 
+      // final writng of story following edit advice
+      const prompt_finalstory = `You are a science fiction writer. Your task is to rewrite this story incorporating the editor's suggestions.
+
+      Instructions:
+      - Write a new version of the story that incorporates the Editor's suggestions
+      - Rewrite the story
+      - do not include any explanations for your edits
+      - follow the story arc
+      - stick to the theme of the story
+      - the story should be around 500 words long. 
+
+      Original Story:
+      ${initialStory}
+
+      Editor's Suggestions:
+      ${editResponse.data.choices[0].message.content}
+
+
+      `;
+
+      // Finalize the story
+      const editedStory = await this.makeRequest(prompt_finalstory, 0.8);
+
       // Add similarity check after editing
-      const finalStory = editResponse.data.choices[0].message.content;
+      const finalStory = editedStory.data.choices[0].message.content;
       const uniqueStory = this.removeSimilarSentences(finalStory);
 
       return uniqueStory;

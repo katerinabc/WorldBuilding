@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+# Ignore Python files
+*.py
+**/*.py
+src/services/*.py 

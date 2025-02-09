@@ -2,8 +2,17 @@ import os
 import glob
 
 def combine_chunks():
+    import os
+
+    # Get directory relative to script location
+    # script_dir = os.path.dirname(os.path.abspath(__file__))
+    # chunks_dir = os.path.join(script_dir, '../../chunks/')
+    chunks_dir = '/Users/katerinadoyle/Documents/gitrepo/storyprompts/WorldBuilding/chunks/'
+
+
     # Get all chunk files
-    chunk_files = glob.glob('chunks_*.txt')
+    # chunk_files = glob.glob('chunks_*.txt')
+    chunk_files = glob.glob(os.path.join(chunks_dir, 'document_*_chunks.txt'))
     print(f"Found {len(chunk_files)} chunk files")
     
     # Sort them numerically

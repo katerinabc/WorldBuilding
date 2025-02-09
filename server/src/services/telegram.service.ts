@@ -35,8 +35,8 @@ interface SessionData {
   image?: string;
   story?: string;
   analyzedThemes?: ThemeAnalysis[];
-  themes?: ThemeAnalysis[];
   analyzedUrl?: string;
+  theme?: string; // Single selected theme
 }
 
 // Add session to context type
@@ -107,13 +107,16 @@ export class TelegramService extends BaseService {
       this.bot.api.setMyCommands([
         {
           command: "start",
-          description: "Add any hello world functionality to your bot",
+          description:
+            "gm world builder. We're gonna write something together. Feed me a twitter url, select a theme and I'll write the story for you. Like it? Copyright it to own the IP. ",
         },
         { command: "feed", description: "Feed the bot tweets" },
         { command: "copyright", description: "get your story copy-righted" },
       ]);
       // all command handlers can be registered here
-      this.bot.command("start", (ctx) => ctx.reply("Hello! I'm here"));
+      this.bot.command("start", (ctx: MyContext) =>
+        ctx.reply("Hello! I'm here")
+      );
       this.bot.catch(async (error) => {
         console.error("Telegram bot error:", error);
       });
@@ -155,14 +158,11 @@ export class TelegramService extends BaseService {
 
       this.bot.command("copyright", async (ctx: MyContext) => {
         try {
-          console.log("[COPYRIGHT] command received from:", ctx.from?.username);
-
           if (!ctx.message?.reply_to_message?.text) {
             await ctx.reply(
               "To copyright your story:\n" +
                 "1. Post your story\n" +
-                "2. Reply to your story with /copyright\n\n" +
-                "This helps me know which story you want to register!"
+                "2. Reply to your story with /copyright"
             );
             return;
           }
@@ -170,21 +170,21 @@ export class TelegramService extends BaseService {
           // Store the story in session
           ctx.session.story = ctx.message.reply_to_message.text;
 
-          // Check for theme first
-          if (!ctx.session.theme) {
-            ctx.session.waitingFor = "theme";
+          // If theme already exists (from previous theme selection), skip theme request
+          if (ctx.session.theme) {
+            ctx.session.waitingFor = "title";
             await ctx.reply(
-              "Please provide a theme for your story. Reply with:\nTheme: your_theme"
+              "Let's register your story on Story Protocol.\n" +
+                "What's the title? Please reply with:\n" +
+                "Title: your title here"
             );
             return;
           }
 
-          // If we have a theme, ask for title
-          ctx.session.waitingFor = "title";
+          // If no theme, ask for it
+          ctx.session.waitingFor = "theme";
           await ctx.reply(
-            "Let's register your story on Story Protocol.\n" +
-              "What's the title? Please reply with:\n" +
-              "Title: your title here"
+            "Please provide a theme for your story. Reply with:\nTheme: your_theme"
           );
         } catch (error) {
           console.error("[COPYRIGHT] command error:", error);
@@ -302,21 +302,22 @@ export class TelegramService extends BaseService {
             // check if we have both URL and themes in sessino
             if (
               ctx.session.analyzedUrl === gettwitterurl &&
-              ctx.session.themes
+              ctx.session.theme
             ) {
               console.log("[URL] Already analyzed this URL");
               await ctx.reply("I already analyzed this URL");
 
               // Display cached themes
-              const keyboard = ctx.session.themes.map((theme, index) => [
-                {
-                  text: theme.theme
-                    .split(":")[0]
-                    .replace(/^\d+\.\s*/, "")
-                    .trim(),
-                  callback_data: `theme_${index}`,
-                },
-              ]);
+              const keyboard =
+                ctx.session.analyzedThemes?.map((theme, index) => [
+                  {
+                    text: theme.theme
+                      .split(":")[0]
+                      .replace(/^\d+\.\s*/, "")
+                      .trim(),
+                    callback_data: `theme_${index}`,
+                  },
+                ]) || [];
               await ctx.reply("Here are the themes I found:", {
                 reply_markup: {
                   inline_keyboard: keyboard,
@@ -375,14 +376,13 @@ export class TelegramService extends BaseService {
               const themes =
                 await this.tweetAnalyzerService.analyzeTweets(tweets);
 
-
               ctx.session.analyzedThemes = themes;
 
               console.log("[TELEGRAM] Analysis complete. Themes:", themes);
               await ctx.reply("Spitting out those themes for you! 🎯");
 
               // Create keyboard buttons
-              const keyboard = themes.map((theme, index) => [
+              const keyboard = themes.slice(0, 5).map((theme, index) => [
                 {
                   text: theme.theme, // Simplified - just show the theme
                   callback_data: `theme_${index}`,
@@ -394,7 +394,7 @@ export class TelegramService extends BaseService {
 
               // Store both URL and themes in session
               ctx.session.analyzedUrl = gettwitterurl;
-              ctx.session.themes = themes;
+              ctx.session.theme = themes[0]?.theme;
 
               // Display themes
               await ctx.reply(
@@ -427,8 +427,7 @@ export class TelegramService extends BaseService {
         try {
           if (!ctx.callbackQuery.data?.startsWith("theme_")) return;
 
-
-          if (!ctx.session.analyzedThemes || !ctx.session.themes) {
+          if (!ctx.session.analyzedThemes || !ctx.session.theme) {
             await ctx.reply(
               "Sorry, I can't find the themes. Please try again."
             );
@@ -444,9 +443,6 @@ export class TelegramService extends BaseService {
           await ctx.answerCallbackQuery();
           await ctx.reply(
             `Writing a story about: ${selectedTheme}... 🖋️\nThis will for sure take a minute...`
-
-
-
           );
 
           // Generate and send story

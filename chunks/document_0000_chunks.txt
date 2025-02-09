@@ -1,0 +1,6 @@
+=== Chunk 1 ===
+b'\xef\xbb\xbfThe Project Gutenberg eBook of Microm\xc3\xa9gas\r\n    \r\nThis ebook is for the use of anyone anywhere in the United States and\r\nmost other parts of the world at no cost and with almost no restrictions\r\nwhatsoever. You may copy it, give it away or re-use it under the terms\r\nof the Project Gutenberg License included with this ebook or online\r\nat www.gutenberg.org. 
+
+=== Chunk 2 ===
+If you are not located in the United States,\r\nyou will have to check the laws of the country where you are located\r\nbefore using this eBook.\r\n\r\nTitle: Microm\xc3\xa9gas\r\n\r\nAuthor: Voltaire\r\n\r\nRelease date: November 1, 2003 [eBook #4649]\r\n                Most recently updated: December 28, 2020\r\n\r\nLanguage: French\r\n\r\n\r\n\r\n*** START OF THE PROJECT GUTENBERG EBOOK MICROM\xc3\x89GAS ***\r\n\r\n\r\n\r\n\r\n\r\n
+
